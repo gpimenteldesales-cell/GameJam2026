@@ -5,11 +5,12 @@ TagManager:
   serializedVersion: 3
   tags:
   - Boat
+  - Peixe
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Peixe
   - Water
   - UI
   - 
