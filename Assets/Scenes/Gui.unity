@@ -341,12 +341,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FishingRay
   origem: {fileID: 1100874039}
-  alcance: 8
+  alcance: 10
   tempoParaPescar: 1
   camadaPeixe:
     serializedVersion: 2
     m_Bits: 8
   pontos: 0
+  spritePescador: {fileID: 174358102}
 --- !u!120 &217723936
 LineRenderer:
   serializedVersion: 3
@@ -444,14 +445,14 @@ LineRenderer:
       atime6: 0
       atime7: 0
       m_Mode: 0
-      m_ColorSpace: -1
+      m_ColorSpace: 0
       m_NumColorKeys: 2
       m_NumAlphaKeys: 2
     numCornerVertices: 0
     numCapVertices: 0
     alignment: 0
     textureMode: 0
-    textureScale: {x: 1, y: 1}
+    textureScale: {x: 0.1, y: 0.1}
     shadowBias: 0.5
     generateLightingData: 0
   m_UseWorldSpace: 1
