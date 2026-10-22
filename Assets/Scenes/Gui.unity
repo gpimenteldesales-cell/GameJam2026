@@ -222,10 +222,8 @@ GameObject:
   m_Component:
   - component: {fileID: 217723932}
   - component: {fileID: 217723931}
-  - component: {fileID: 217723933}
-  - component: {fileID: 217723938}
-  - component: {fileID: 217723935}
   - component: {fileID: 217723936}
+  - component: {fileID: 217723937}
   m_Layer: 0
   m_Name: Bote
   m_TagString: Player
@@ -280,7 +278,7 @@ SpriteRenderer:
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 1
   m_MaskInteraction: 0
   m_Sprite: {fileID: 7354847052515405997, guid: 529f4989bfc61164f9282e91cc46d92a, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -309,51 +307,6 @@ Transform:
   - {fileID: 174358101}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!95 &217723933
-Animator:
-  serializedVersion: 7
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 217723930}
-  m_Enabled: 1
-  m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: 164e471b2b9624b44984502308aa992d, type: 2}
-  m_CullingMode: 0
-  m_UpdateMode: 0
-  m_ApplyRootMotion: 1
-  m_LinearVelocityBlending: 0
-  m_StabilizeFeet: 0
-  m_AnimatePhysics: 1
-  m_WarningMessage: 
-  m_HasTransformHierarchy: 1
-  m_AllowConstantClipSamplingOptimization: 1
-  m_KeepAnimatorStateOnDisable: 0
-  m_WriteDefaultValuesOnDisable: 0
---- !u!114 &217723935
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 217723930}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f93d68796234cad4d9864d1fb777503b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::FishingRay
-  origem: {fileID: 1100874039}
-  alcance: 20
-  tempoParaPescar: 0
-  camadaPeixe:
-    m_Bits: 8
-  linha: {fileID: 0}
-  cam: {fileID: 0}
-  tempoMirando: 0
-  peixeAtual: {fileID: 0}
-  pontos: 0
-  spritePescador: {fileID: 174358102}
 --- !u!120 &217723936
 LineRenderer:
   serializedVersion: 3
@@ -464,7 +417,7 @@ LineRenderer:
   m_UseWorldSpace: 1
   m_Loop: 0
   m_ApplyActiveColorSpace: 1
---- !u!114 &217723938
+--- !u!114 &217723937
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -473,37 +426,20 @@ MonoBehaviour:
   m_GameObject: {fileID: 217723930}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4a2dd7cf96600b044bda7c4ccb974f26, type: 3}
+  m_Script: {fileID: 11500000, guid: 3f16797407767aa408b2f1b30e5067bb, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EventoEquilibrioBarco
-  teclaA: 101
-  teclaB: 113
-  perigoInicial: 0.3
-  empurraoPorSegundo: 0.15
-  forcaDoAperto: 0.05
-  penalidadeErro: 0.03
-  visualBarco: {fileID: 217723932}
-  anguloMaximoInclinacao: 35
-  tempoSuavizacaoInclinacao: 0.15
-  anguloBalanco: 3
-  velocidadeBalanco: 14
-  anguloVirada: 180
-  velocidadeAfundar: 1.5
-  profundidadeAfundar: 3
-  uiRaiz: {fileID: 0}
-  barraPerigo: {fileID: 1313586790}
-  textoAviso: {fileID: 0}
-  aoIniciarEvento:
-    m_PersistentCalls:
-      m_Calls: []
-  aoSucesso:
-    m_PersistentCalls:
-      m_Calls: []
-  aoVirar:
-    m_PersistentCalls:
-      m_Calls: []
-  emAndamento: 0
-  virou: 0
+  m_EditorClassIdentifier: Assembly-CSharp::RaioDePesca
+  origem: {fileID: 1100874039}
+  alcance: 8
+  camadaPeixe:
+    serializedVersion: 2
+    m_Bits: 8
+  eventoBarco: {fileID: 0}
+  bruxa: {fileID: 0}
+  bloquearPescaNoEvento: 1
+  spritePescador: {fileID: 0}
+  audioFonte: {fileID: 0}
+  somPesca: {fileID: 0}
 --- !u!1 &234986269
 GameObject:
   m_ObjectHideFlags: 0
@@ -1212,7 +1148,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1222610268}
-  - component: {fileID: 1222610267}
   - component: {fileID: 1222610266}
   m_Layer: 0
   m_Name: Bruxa
@@ -1268,7 +1203,7 @@ SpriteRenderer:
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 1
   m_MaskInteraction: 0
   m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -1281,39 +1216,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
   m_BlendShapeWeights: []
---- !u!114 &1222610267
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1222610265}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4ecf2fa1b7734bd488fbd83acf638351, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::WitchMov
-  barco: {fileID: 217723932}
-  distanciaMinima: 3
-  distanciaAtaque: 3.5
-  velocidadeAproximacao: 1
-  alturaSobreBarco: 2.5
-  distanciaRecuo: 10
-  velocidadeRecuo: 3
-  tempoSuavizacao: 0.7
-  velocidadeMaxima: 6
-  amplitudeVertical: 2
-  frequenciaVertical: 4
-  amplitudeHorizontal: 0.2
-  frequenciaHorizontal: 0.9
-  spriteOlhaParaDireita: 0
-  <EstadoAtual>k__BackingField: 0
-  distanciaAtual: 0
-  lado: 0
-  velocidade: {x: 0, y: 0}
-  faseAleatoria: 0
-  sr: {fileID: 0}
-  eventoEquilibrio: {fileID: 0}
 --- !u!4 &1222610268
 Transform:
   m_ObjectHideFlags: 0
@@ -1417,10 +1319,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1259985875}
-  - component: {fileID: 1259985874}
   - component: {fileID: 1259985873}
   m_Layer: 0
-  m_Name: background teste_0 (2)
+  m_Name: Fundo_Parallax
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1476,7 +1377,7 @@ SpriteRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 9134130586107378260, guid: 2ba288ec10b430f4ca9dff1fa4e8d3dc, type: 3}
-  m_Color: {r: 0.7169812, g: 0.07102172, b: 0.07102172, a: 1}
+  m_Color: {r: 0.32420006, g: 0, b: 0.5018867, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -1486,24 +1387,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
   m_BlendShapeWeights: []
---- !u!114 &1259985874
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1259985872}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9dee4a32e79cc1e46b05c72da7136cbc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Parallax
-  velocidade: 2
-  toLeft: 1
-  posInicial: {x: 0, y: 0, z: 0}
-  larguraTile: 0
-  deslocamento: 0
-  paraEsquerda: 0
 --- !u!4 &1259985875
 Transform:
   m_ObjectHideFlags: 0
@@ -1693,10 +1576,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1400717237}
-  - component: {fileID: 1400717236}
   - component: {fileID: 1400717235}
   m_Layer: 0
-  m_Name: background teste_0
+  m_Name: Fundo_Parallax
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1752,7 +1634,7 @@ SpriteRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 9134130586107378260, guid: 2ba288ec10b430f4ca9dff1fa4e8d3dc, type: 3}
-  m_Color: {r: 0.7735849, g: 0, b: 0, a: 1}
+  m_Color: {r: 0.32420006, g: 0, b: 0.5018867, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -1762,24 +1644,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
   m_BlendShapeWeights: []
---- !u!114 &1400717236
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1400717234}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9dee4a32e79cc1e46b05c72da7136cbc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Parallax
-  velocidade: 2
-  toLeft: 1
-  posInicial: {x: 0, y: 0, z: 0}
-  larguraTile: 0
-  deslocamento: 0
-  paraEsquerda: 0
 --- !u!4 &1400717237
 Transform:
   m_ObjectHideFlags: 0
@@ -1804,10 +1668,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1425385191}
-  - component: {fileID: 1425385190}
   - component: {fileID: 1425385189}
   m_Layer: 0
-  m_Name: Bruxa (1)
+  m_Name: Bruxa
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1860,7 +1723,7 @@ SpriteRenderer:
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 1
   m_MaskInteraction: 0
   m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -1873,39 +1736,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
   m_BlendShapeWeights: []
---- !u!114 &1425385190
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1425385188}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4ecf2fa1b7734bd488fbd83acf638351, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::WitchMov
-  barco: {fileID: 217723932}
-  distanciaMinima: 3
-  distanciaAtaque: 3.5
-  velocidadeAproximacao: 1
-  alturaSobreBarco: 2.5
-  distanciaRecuo: 10
-  velocidadeRecuo: 3
-  tempoSuavizacao: 0.7
-  velocidadeMaxima: 6
-  amplitudeVertical: 2
-  frequenciaVertical: 4
-  amplitudeHorizontal: 0.2
-  frequenciaHorizontal: 0.9
-  spriteOlhaParaDireita: 0
-  <EstadoAtual>k__BackingField: 0
-  distanciaAtual: 0
-  lado: 0
-  velocidade: {x: 0, y: 0}
-  faseAleatoria: 0
-  sr: {fileID: 0}
-  eventoEquilibrio: {fileID: 0}
 --- !u!4 &1425385191
 Transform:
   m_ObjectHideFlags: 0
@@ -1988,7 +1818,7 @@ SpriteRenderer:
   m_SortingOrder: 1
   m_MaskInteraction: 0
   m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
-  m_Color: {r: 0.17647076, g: 0, b: 1, a: 0.7372549}
+  m_Color: {r: 0.17647076, g: 0, b: 1, a: 0.7607843}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -2078,7 +1908,7 @@ SpriteRenderer:
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 1
   m_MaskInteraction: 0
   m_Sprite: {fileID: 7205865426434937565, guid: 3a118c4432d78944988f02634f6e658f, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -2177,7 +2007,11 @@ MonoBehaviour:
         m_SelectedSource:
           rid: -2
         m_Provider2DCache:
-          rid: -2
+          rid: 9028000318058660089
+    - rid: 9028000318058660089
+      type: {class: 'Provider2DCache`1[[UnityEngine.Rendering.Universal.Light2DProvider, Unity.RenderPipelines.Universal.2D.Runtime]]', ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
+      data:
+        m_Cache: []
 --- !u!1 &2068825954
 GameObject:
   m_ObjectHideFlags: 0
@@ -2270,6 +2104,25 @@ PolygonCollider2D:
       - {x: 0, y: -0.25}
       - {x: 0.5, y: 0}
   m_UseDelaunayMesh: 1
+--- !u!114 &2143685679
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2143685669}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 700273ffc82ff664baa6ef3d6f1f611f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Peixe
+  valor: 10
+  profundidade: 0.5
+  velocidadeBase: 3
+  limiteX: 8
+  tempoParaPescar: 1
+  ehBruxa: 0
+  forcaDaPista: 0.6
 --- !u!1001 &1955813521726708095
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2320,7 +2173,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2543621678588015897, guid: f74c22490fcc4a3498c335653b596793, type: 3}
       propertyPath: m_Name
-      value: Fish
+      value: Peixe
       objectReference: {fileID: 0}
     - target: {fileID: 2543621678588015897, guid: f74c22490fcc4a3498c335653b596793, type: 3}
       propertyPath: m_Layer
@@ -2329,6 +2182,18 @@ PrefabInstance:
     - target: {fileID: 2543621678588015897, guid: f74c22490fcc4a3498c335653b596793, type: 3}
       propertyPath: m_TagString
       value: Peixe
+      objectReference: {fileID: 0}
+    - target: {fileID: 5423341571121404018, guid: f74c22490fcc4a3498c335653b596793, type: 3}
+      propertyPath: 'managedReferences[9028000318058660094]'
+      value: 'Unity.RenderPipelines.Universal.2D.Runtime UnityEngine.Rendering.Universal.Provider2DCache`1[[UnityEngine.Rendering.Universal.Light2DProvider, Unity.RenderPipelines.Universal.2D.Runtime]]'
+      objectReference: {fileID: 0}
+    - target: {fileID: 5423341571121404018, guid: f74c22490fcc4a3498c335653b596793, type: 3}
+      propertyPath: managedReferences[1000].m_Provider2DCache
+      value: 9028000318058660094
+      objectReference: {fileID: 0}
+    - target: {fileID: 5423341571121404018, guid: f74c22490fcc4a3498c335653b596793, type: 3}
+      propertyPath: managedReferences[9028000318058660094].m_Cache.Array.size
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6807185867822030566, guid: f74c22490fcc4a3498c335653b596793, type: 3}
       propertyPath: valor
@@ -2346,13 +2211,17 @@ PrefabInstance:
       propertyPath: velocidadeBase
       value: 5
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 6807185867822030566, guid: f74c22490fcc4a3498c335653b596793, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 2543621678588015897, guid: f74c22490fcc4a3498c335653b596793, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2143685674}
+    - targetCorrespondingSourceObject: {fileID: 2543621678588015897, guid: f74c22490fcc4a3498c335653b596793, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2143685679}
   m_SourcePrefab: {fileID: 100100000, guid: f74c22490fcc4a3498c335653b596793, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
