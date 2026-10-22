@@ -5,7 +5,7 @@ public class Fish : MonoBehaviour
     public int valor = 10;
     [Range(0f, 1f)] public float profundidade = 0.5f; // 0 = perto, 1 = longe
     public float velocidadeBase = 3f;
-    public float limiteX = 12f;   // quando passa disso, volta pelo outro lado
+    public float limiteX = 8f;   // quando passa disso, volta pelo outro lado
 
     float direcao = 1f;
 
