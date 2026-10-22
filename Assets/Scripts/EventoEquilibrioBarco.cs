@@ -30,6 +30,9 @@ public class EventoEquilibrioBarco : MonoBehaviour
     public float velocidadeAfundar = 1.5f;
     public float profundidadeAfundar = 3f;
 
+    [Header("Quando o evento comeca de verdade")]
+    public float distanciaParaComecar = 5f;    // o slider so aparece (e o perigo so sobe) quando a bruxa chega a essa distancia do barco (0 = desliga)
+
     [Header("UI (opcional)")]
     public GameObject uiRaiz;
     public Slider barraPerigo;
@@ -45,6 +48,7 @@ public class EventoEquilibrioBarco : MonoBehaviour
     public bool virou;
 
     BruxaVoadora bruxa;
+    bool bruxaPerto;        // a bruxa que ataca ja chegou no barco?
     KeyCode teclaEsperada;
     float perigo;
     float anguloBase;
@@ -59,7 +63,7 @@ public class EventoEquilibrioBarco : MonoBehaviour
         anguloBase = visualBarco.eulerAngles.z;
         anguloAtual = anguloBase;
 
-        if (uiRaiz != null) uiRaiz.SetActive(false);
+        MostrarUI(false);
     }
 
     // A bruxa chama isso quando chega perto.
@@ -79,7 +83,7 @@ public class EventoEquilibrioBarco : MonoBehaviour
         teclaEsperada = teclaA;
         emAndamento = true;
 
-        if (uiRaiz != null) uiRaiz.SetActive(true);
+        MostrarUI(false);   // o slider aparece quando a bruxa chegar (veja o Update)
         AtualizarUI();
         aoIniciarEvento.Invoke();
         return true;
@@ -89,7 +93,7 @@ public class EventoEquilibrioBarco : MonoBehaviour
     public void Cancelar()
     {
         emAndamento = false;
-        if (uiRaiz != null) uiRaiz.SetActive(false);
+        MostrarUI(false);
     }
 
     // O ProjetilFerro chama isso quando o ferro acerta a bruxa que esta atacando.
@@ -103,27 +107,58 @@ public class EventoEquilibrioBarco : MonoBehaviour
 
     void Update()
     {
+        bruxaPerto = false;
+
         if (emAndamento)
         {
-            // o perigo sobe sozinho com o tempo
-            perigo += empurraoPorSegundo * Time.deltaTime;
+            // o slider so aparece quando a bruxa esta de fato em cima do barco
+            bruxaPerto = BruxaChegou();
+            MostrarUI(bruxaPerto);
 
-            LerTeclas();
-
-            perigo = Mathf.Clamp01(perigo);
-            AtualizarUI();
-
-            if (perigo <= 0f)
+            if (bruxaPerto)
             {
-                Vencer();
-            }
-            else if (perigo >= 1f)
-            {
-                Virar();
+                // o perigo sobe sozinho com o tempo
+                perigo += empurraoPorSegundo * Time.deltaTime;
+
+                LerTeclas();
+
+                perigo = Mathf.Clamp01(perigo);
+                AtualizarUI();
+
+                if (perigo <= 0f)
+                {
+                    Vencer();
+                }
+                else if (perigo >= 1f)
+                {
+                    Virar();
+                }
             }
         }
 
         AtualizarInclinacao();
+    }
+
+    // A bruxa ja esta perto do barco? (olha a posicao real dela, nao so o estado)
+    bool BruxaChegou()
+    {
+        if (bruxa == null) return true;
+        if (distanciaParaComecar <= 0f) return true;
+
+        return Mathf.Abs(bruxa.transform.position.x - transform.position.x) <= distanciaParaComecar;
+    }
+
+    // Liga ou desliga o slider. Se voce nao arrastou o "UiRaiz", esconde a barra e o texto direto.
+    void MostrarUI(bool mostrar)
+    {
+        if (uiRaiz != null)
+        {
+            uiRaiz.SetActive(mostrar);
+            return;
+        }
+
+        if (barraPerigo != null) barraPerigo.gameObject.SetActive(mostrar);
+        if (textoAviso != null) textoAviso.gameObject.SetActive(mostrar);
     }
 
     void LerTeclas()
@@ -183,7 +218,7 @@ public class EventoEquilibrioBarco : MonoBehaviour
                 visualBarco.position += Vector3.down * passo;
             }
         }
-        else if (emAndamento)
+        else if (emAndamento && bruxaPerto)
         {
             // quanto maior o perigo, mais o barco inclina
             anguloAlvo = anguloBase - lado * Mathf.Lerp(0f, anguloMaximoInclinacao, perigo);
@@ -210,7 +245,7 @@ public class EventoEquilibrioBarco : MonoBehaviour
     void Vencer()
     {
         emAndamento = false;
-        if (uiRaiz != null) uiRaiz.SetActive(false);
+        MostrarUI(false);
         if (bruxa != null) bruxa.Repelir();
         aoSucesso.Invoke();
     }
@@ -219,7 +254,7 @@ public class EventoEquilibrioBarco : MonoBehaviour
     {
         emAndamento = false;
         virou = true;
-        if (uiRaiz != null) uiRaiz.SetActive(false);
+        MostrarUI(false);
         aoVirar.Invoke();
 
         // avisa o gerenciador: fim de jogo

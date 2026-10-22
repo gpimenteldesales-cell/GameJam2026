@@ -2,8 +2,8 @@ using UnityEngine;
 using TMPro;
 
 // Inventario de ferro do pescador.
-//  - Clique DIREITO em cima de um ferro que boia no mar para pegar.
-//  - Aperte F para arremessar um ferro na bruxa (vai na direcao do mouse).
+//  - PEGAR: aperte os botoes ESQUERDO e DIREITO do mouse AO MESMO TEMPO, com o mouse em cima do ferro.
+//  - ARREMESSAR: SEGURE a tecla (F) para mirar (aparece uma setinha) e SOLTE para lancar na direcao do mouse.
 // Coloque no mesmo objeto do RaioDePesca (o "Pescador").
 public class InventarioFerro : MonoBehaviour
 {
@@ -16,16 +16,20 @@ public class InventarioFerro : MonoBehaviour
     public int quantidade = 0;                  // ferros que voce tem agora
     public int capacidade = 5;
 
-    [Header("Pegar")]
-    public int botaoMouseParaPegar = 1;         // 0 = esquerdo, 1 = direito
+    [Header("Pegar (botao esquerdo + direito JUNTOS)")]
     public float alcancePegar = 8f;             // distancia maxima da origem
     public float raioClique = 0.7f;             // folga para clicar perto do ferro
 
-    [Header("Arremessar")]
+    [Header("Arremessar (segure para mirar, solte para lancar)")]
     public KeyCode teclaArremessar = KeyCode.F;
     public float velocidadeArremesso = 14f;
     public float intervaloEntreArremessos = 0.4f;
-    public float raioMiraAssistida = 1.5f;      // mouse perto de uma bruxa? o ferro vai nela (0 = desliga)
+
+    [Header("Setinha de mira")]
+    public Sprite spriteSeta;                   // opcional: sem sprite, desenha uma seta amarela
+    public float comprimentoSeta = 2.5f;
+    public Color corSeta = new Color(1f, 0.9f, 0.2f, 0.95f);
+    public int ordemSeta = 30;                  // ordem de desenho (maior = na frente)
 
     [Header("UI (opcional)")]
     public TMP_Text textoFerro;
@@ -35,12 +39,22 @@ public class InventarioFerro : MonoBehaviour
     public AudioClip somPegar;
     public AudioClip somArremessar;
 
+    [Header("Depuracao")]
+    public bool depurar = false;                // escreve no Console por que o ferro nao foi pego
+
     Camera camera2D;
     float proximoArremesso;
+    SpriteRenderer seta;
 
     void Start()
     {
         camera2D = Camera.main;
+        if (camera2D == null)
+        {
+            Debug.LogError("InventarioFerro: falta a camera com a tag MainCamera!");
+            enabled = false;
+            return;
+        }
 
         // aproveita as ligacoes do RaioDePesca, se ele estiver no mesmo objeto
         RaioDePesca pesca = GetComponent<RaioDePesca>();
@@ -57,17 +71,45 @@ public class InventarioFerro : MonoBehaviour
 
     void Update()
     {
-        if (!PodeAgir()) return;
+        if (!PodeAgir())
+        {
+            EsconderSeta();
+            return;
+        }
 
-        if (Input.GetMouseButtonDown(botaoMouseParaPegar))
+        // PEGAR: os dois botoes juntos (age uma vez, no instante em que o segundo botao desce)
+        bool doisBotoes = Input.GetMouseButton(0) && Input.GetMouseButton(1);
+        bool acabouDeJuntar = Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1);
+        if (doisBotoes && acabouDeJuntar)
         {
             TentarPegar();
         }
 
-        if (Input.GetKeyDown(teclaArremessar))
+        // MIRAR: segurando a tecla (e tendo ferro), mostra a setinha
+        if (quantidade > 0 && Input.GetKey(teclaArremessar))
+        {
+            MostrarSeta();
+        }
+        else
+        {
+            EsconderSeta();
+        }
+
+        // ARREMESSAR: ao soltar a tecla
+        if (Input.GetKeyUp(teclaArremessar))
         {
             TentarArremessar();
         }
+    }
+
+    void OnDisable()
+    {
+        EsconderSeta();
+    }
+
+    void OnDestroy()
+    {
+        if (seta != null) Destroy(seta.gameObject);
     }
 
     // so age enquanto o jogo esta rolando e o barco nao virou
@@ -89,7 +131,11 @@ public class InventarioFerro : MonoBehaviour
 
     void TentarPegar()
     {
-        if (quantidade >= capacidade) return;   // inventario cheio
+        if (quantidade >= capacidade)
+        {
+            if (depurar) Debug.Log("[Ferro] inventario cheio (" + quantidade + "/" + capacidade + ").");
+            return;
+        }
 
         Vector3 mouse = MouseNoMundo();
 
@@ -102,16 +148,27 @@ public class InventarioFerro : MonoBehaviour
             ItemFerro item = ItemFerro.todos[i];
 
             float distanciaDoMouse = Vector2.Distance(item.transform.position, mouse);
-            if (distanciaDoMouse > menorDistancia) continue;
-
             float distanciaDaOrigem = Vector2.Distance(item.transform.position, origem.position);
+
+            if (depurar)
+            {
+                Debug.Log("[Ferro] item em " + item.transform.position
+                    + " | distancia do mouse: " + distanciaDoMouse.ToString("0.00") + " (max " + raioClique + ")"
+                    + " | distancia da origem: " + distanciaDaOrigem.ToString("0.00") + " (max " + alcancePegar + ")");
+            }
+
+            if (distanciaDoMouse > menorDistancia) continue;
             if (distanciaDaOrigem > alcancePegar) continue;
 
             menorDistancia = distanciaDoMouse;
             escolhido = item;
         }
 
-        if (escolhido == null) return;
+        if (escolhido == null)
+        {
+            if (depurar) Debug.Log("[Ferro] nenhum ferro perto do mouse (ferros na cena: " + ItemFerro.todos.Count + ").");
+            return;
+        }
 
         quantidade++;
         escolhido.Coletado();
@@ -124,21 +181,8 @@ public class InventarioFerro : MonoBehaviour
         if (quantidade <= 0) return;
         if (Time.time < proximoArremesso) return;
 
-        Vector3 destino = MouseNoMundo();
-
-        // mira assistida: se o mouse esta perto de uma bruxa, mira nela
-        BruxaVoadora alvo = BruxaPertoDoMouse(destino);
-        if (alvo != null)
-        {
-            destino = alvo.transform.position;
-        }
-
-        Vector2 direcao = (Vector2)(destino - origem.position);
-        if (direcao.sqrMagnitude < 0.0001f)
-        {
-            direcao = Vector2.up;
-        }
-        direcao.Normalize();
+        // o ferro vai exatamente para onde o mouse esta apontando
+        Vector2 direcao = DirecaoParaOMouse();
 
         quantidade--;
         proximoArremesso = Time.time + intervaloEntreArremessos;
@@ -168,28 +212,82 @@ public class InventarioFerro : MonoBehaviour
         AtualizarUI();
     }
 
-    // bruxa (que nao esteja fugindo) mais perto do mouse, dentro do raio de mira assistida
-    BruxaVoadora BruxaPertoDoMouse(Vector3 mouse)
+    // ---------- setinha de mira ----------
+
+    void MostrarSeta()
     {
-        if (raioMiraAssistida <= 0f) return null;
+        if (seta == null) CriarSeta();
 
-        BruxaVoadora melhor = null;
-        float menorDistancia = raioMiraAssistida;
+        Vector2 direcao = DirecaoParaOMouse();
+        float angulo = Mathf.Atan2(direcao.y, direcao.x) * Mathf.Rad2Deg;
 
-        for (int i = 0; i < BruxaVoadora.todas.Count; i++)
+        seta.transform.position = origem.position;
+        seta.transform.rotation = Quaternion.Euler(0f, 0f, angulo);
+
+        float escala = comprimentoSeta / seta.sprite.bounds.size.x;
+        seta.transform.localScale = new Vector3(escala, escala, 1f);
+
+        seta.gameObject.SetActive(true);
+    }
+
+    void EsconderSeta()
+    {
+        if (seta != null) seta.gameObject.SetActive(false);
+    }
+
+    void CriarSeta()
+    {
+        GameObject obj = new GameObject("SetaDeMira");
+        seta = obj.AddComponent<SpriteRenderer>();
+        seta.sprite = (spriteSeta != null) ? spriteSeta : CriarSpriteSeta();
+        seta.color = corSeta;
+        seta.sortingOrder = ordemSeta;
+        obj.SetActive(false);
+    }
+
+    // Desenha uma seta branca apontando para a direita (o ponto de giro fica na ponta de tras).
+    static Sprite CriarSpriteSeta()
+    {
+        const int largura = 64;
+        const int altura = 16;
+        const int inicioPonta = 44;
+
+        Texture2D tex = new Texture2D(largura, altura, TextureFormat.RGBA32, false);
+        tex.wrapMode = TextureWrapMode.Clamp;
+
+        float meio = (altura - 1) / 2f;
+        Color[] pixels = new Color[largura * altura];
+
+        for (int y = 0; y < altura; y++)
         {
-            BruxaVoadora bruxa = BruxaVoadora.todas[i];
-            if (bruxa.estadoAtual == BruxaVoadora.Estado.Recuando) continue;
-
-            float d = Vector2.Distance(bruxa.transform.position, mouse);
-            if (d < menorDistancia)
+            for (int x = 0; x < largura; x++)
             {
-                menorDistancia = d;
-                melhor = bruxa;
+                bool corpo = x < inicioPonta && Mathf.Abs(y - meio) <= 2f;
+
+                float progresso = (x - inicioPonta) / (float)(largura - 1 - inicioPonta);
+                float metade = Mathf.Lerp(altura / 2f, 0f, progresso);
+                bool ponta = x >= inicioPonta && Mathf.Abs(y - meio) <= metade;
+
+                pixels[y * largura + x] = (corpo || ponta) ? Color.white : Color.clear;
             }
         }
 
-        return melhor;
+        tex.SetPixels(pixels);
+        tex.Apply();
+
+        return Sprite.Create(tex, new Rect(0f, 0f, largura, altura), new Vector2(0f, 0.5f), 32f);
+    }
+
+    // ---------- utilidades ----------
+
+    Vector2 DirecaoParaOMouse()
+    {
+        Vector2 direcao = (Vector2)(MouseNoMundo() - origem.position);
+        if (direcao.sqrMagnitude < 0.0001f)
+        {
+            return Vector2.up;
+        }
+        return direcao.normalized;
     }
 
     Vector3 MouseNoMundo()

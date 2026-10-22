@@ -54,7 +54,8 @@ public class RaioDePesca : MonoBehaviour
             return;
         }
 
-        if (Input.GetMouseButton(0))
+        // com os dois botoes juntos o jogador esta pegando ferro: nao pesca nesse momento
+        if (Input.GetMouseButton(0) && !Input.GetMouseButton(1))
         {
             Mirar();
         }

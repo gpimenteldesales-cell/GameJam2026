@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -26,8 +27,18 @@ public class BruxaVoadora : MonoBehaviour
     public float velocidadeRecuo = 3f;
 
     [Header("Separacao entre bruxas")]
-    public float distanciaSeparacao = 1.8f;  // abaixo disso uma empurra a outra
-    public float forcaSeparacao = 2f;        // quanto empurra (em unidades do mundo)
+    public float distanciaSeparacao = 1.8f;      // distancia minima entre duas bruxas (sobe sozinha se o sprite for maior)
+    public float espacamentoHorizontal = 2.2f;   // cada bruxa extra do mesmo lado fica mais longe do barco por isso
+    public float espacamentoVertical = 1f;       // e vai alternando entre mais alta e mais baixa
+    public float velocidadeAfastar = 12f;        // quao rapido uma bruxa sai de cima da outra
+
+    [Header("Vida")]
+    public int vidaMaxima = 3;                   // quantos acertos de ferro ela aguenta
+    public float recuoAoLevarDano = 1.5f;        // cada acerto empurra a bruxa um pouco para longe do barco
+    public float tamanhoBarra = 1.4f;            // largura da barrinha de vida
+    public Color corAoLevarDano = new Color(1f, 0.4f, 0.4f);
+    public float duracaoPiscada = 0.15f;
+    public float duracaoMorte = 0.5f;
 
     [Header("Nivel (o GerenciadorBruxas muda isso sozinho)")]
     public float multiplicadorNivel = 1f;    // 1 = normal, 1.5 = 50% mais rapida
@@ -70,8 +81,25 @@ public class BruxaVoadora : MonoBehaviour
     SpriteRenderer sr;
     EventoEquilibrioBarco eventoEquilibrio;
 
+    // numero de chegada: decide quem fica na frente quando ha varias bruxas do mesmo lado
+    static int contadorOrdem;
+    int ordem;
+    float slotAtual;                     // vaga que a bruxa ocupa (0 = a mais perto do barco)
+
+    int vidaAtual;
+    bool morta;
+    float fimPiscada;
+    Color corOriginal = Color.white;
+    BarraDeVida barra;
+
+    void Awake()
+    {
+        vidaAtual = vidaMaxima;
+    }
+
     void OnEnable()
     {
+        ordem = contadorOrdem++;
         todas.Add(this);
     }
 
@@ -89,6 +117,8 @@ public class BruxaVoadora : MonoBehaviour
         }
 
         sr = GetComponentInChildren<SpriteRenderer>();
+        if (sr != null) corOriginal = sr.color;
+        barra = BarraDeVida.Criar(transform, sr, tamanhoBarra);
         eventoEquilibrio = barco.GetComponent<EventoEquilibrioBarco>();
         faseAleatoria = Random.value * 10f;
         proximoCacarejo = Time.time + Random.Range(cacarejoMinimo, cacarejoMaximo);
@@ -104,6 +134,7 @@ public class BruxaVoadora : MonoBehaviour
             lado = -1f;
         }
         distanciaAtual = Mathf.Abs(dx);
+        slotAtual = MeuSlot();
 
         // nasceu de um peixe-bruxa: ataca assim que aparece
         if (atacarAoNascer)
@@ -114,7 +145,9 @@ public class BruxaVoadora : MonoBehaviour
 
     void Update()
     {
-        if (barco == null) return;
+        if (barco == null || morta) return;
+
+        RestaurarCorDepoisDaPiscada();
 
         AtualizarEstado();
         MoverEFlutuar();
@@ -168,11 +201,12 @@ public class BruxaVoadora : MonoBehaviour
         alvo.y += Mathf.Sin(t * frequenciaVertical) * amplitudeVertical;
         alvo.x += Mathf.Sin(t * frequenciaHorizontal) * amplitudeHorizontal;
 
-        // afasta um pouco das outras bruxas (a que esta atacando nao se afasta)
-        if (estadoAtual != Estado.Atacando)
-        {
-            alvo += CalcularSeparacao();
-        }
+        // cada bruxa ocupa uma vaga propria do mesmo lado do barco:
+        // as extras ficam mais longe e alternam entre mais altas e mais baixas
+        slotAtual = Mathf.MoveTowards(slotAtual, MeuSlot(), 2f * Time.deltaTime);
+        float passoHorizontal = Mathf.Max(espacamentoHorizontal, DistanciaSeparacao() * 1.1f);
+        alvo.x += lado * slotAtual * passoHorizontal;
+        alvo.y += Mathf.PingPong(slotAtual, 1f) * espacamentoVertical;
 
         // move suavemente ate o alvo (em nivel alto ela responde mais rapido)
         float m = MultiplicadorSeguro();
@@ -180,23 +214,63 @@ public class BruxaVoadora : MonoBehaviour
             transform.position, alvo, ref velocidadeAtual, tempoSuavizacao / m, velocidadeMaxima * m);
 
         transform.position = new Vector3(novaPosicao.x, novaPosicao.y, transform.position.z);
+
+        // rede de seguranca: se mesmo assim ficarem coladas, uma sai de cima da outra
+        AfastarDasOutras();
     }
 
-    // Empurra a bruxa para longe das outras que estao muito perto,
-    // para elas nao ficarem uma em cima da outra.
-    Vector2 CalcularSeparacao()
+    // Distancia minima entre duas bruxas: a configurada, ou a largura do sprite se for maior
+    float DistanciaSeparacao()
     {
-        Vector2 empurrao = Vector2.zero;
-        Vector2 minhaPosicao = transform.position;
+        if (sr == null) return distanciaSeparacao;
+        return Mathf.Max(distanciaSeparacao, sr.bounds.size.x);
+    }
+
+    // Que vaga a bruxa ocupa do lado dela: 0 = a mais perto do barco, 1 = logo atras, e assim por diante.
+    // Quem esta atacando tem prioridade; entre as demais, a que chegou primeiro fica na frente.
+    int MeuSlot()
+    {
+        int slot = 0;
+        bool euAtaco = estadoAtual == Estado.Atacando;
+
+        for (int i = 0; i < todas.Count; i++)
+        {
+            BruxaVoadora outra = todas[i];
+            if (outra == this || outra.lado != lado) continue;
+            if (outra.estadoAtual == Estado.Recuando) continue;
+
+            bool outraAtaca = outra.estadoAtual == Estado.Atacando;
+
+            if (outraAtaca != euAtaco)
+            {
+                if (outraAtaca) slot++;       // quem ataca fica na frente
+            }
+            else if (outra.ordem < ordem)
+            {
+                slot++;                       // quem chegou primeiro fica na frente
+            }
+        }
+
+        return slot;
+    }
+
+    // Se duas bruxas ficarem mais perto que a distancia minima, esta se afasta da outra.
+    // A que esta atacando nao sai do lugar: as outras desviam dela.
+    void AfastarDasOutras()
+    {
+        if (estadoAtual == Estado.Atacando) return;
+
+        Vector2 posicao = transform.position;
 
         for (int i = 0; i < todas.Count; i++)
         {
             BruxaVoadora outra = todas[i];
             if (outra == this) continue;
 
-            Vector2 diferenca = minhaPosicao - (Vector2)outra.transform.position;
+            float minima = Mathf.Max(DistanciaSeparacao(), outra.DistanciaSeparacao());
+            Vector2 diferenca = posicao - (Vector2)outra.transform.position;
             float distancia = diferenca.magnitude;
-            if (distancia >= distanciaSeparacao) continue;
+            if (distancia >= minima) continue;
 
             // exatamente no mesmo lugar? foge numa direcao propria de cada bruxa
             Vector2 direcao;
@@ -209,10 +283,18 @@ public class BruxaVoadora : MonoBehaviour
                 direcao = new Vector2(Mathf.Cos(faseAleatoria), Mathf.Sin(faseAleatoria));
             }
 
-            empurrao += direcao * (distanciaSeparacao - distancia) / distanciaSeparacao;
+            // se a outra esta atacando (parada), eu desvio tudo; senao dividimos o desvio
+            float parte = 0.5f;
+            if (outra.estadoAtual == Estado.Atacando)
+            {
+                parte = 1f;
+            }
+
+            float passo = Mathf.Clamp01(velocidadeAfastar * Time.deltaTime);
+            posicao += direcao * (minima - distancia) * parte * passo;
         }
 
-        return empurrao * forcaSeparacao;
+        transform.position = new Vector3(posicao.x, posicao.y, transform.position.z);
     }
 
     // faz a bruxa olhar para o barco
@@ -272,13 +354,89 @@ public class BruxaVoadora : MonoBehaviour
     // chamado pelo ProjetilFerro quando o ferro acerta a bruxa
     public void AcertadaPorFerro()
     {
+        AcertadaPorFerro(1);
+    }
+
+    public void AcertadaPorFerro(int dano)
+    {
+        if (morta) return;
+
+        vidaAtual = Mathf.Max(0, vidaAtual - dano);
+        if (barra != null) barra.DefinirProporcao((float)vidaAtual / Mathf.Max(1, vidaMaxima));
+
+        // pisca vermelha
+        fimPiscada = Time.time + duracaoPiscada;
+        if (sr != null) sr.color = corAoLevarDano;
+
+        if (vidaAtual <= 0)
+        {
+            Morrer();
+            return;
+        }
+
+        // sobreviveu: o acerto empurra ela um pouco para tras
+        distanciaAtual = Mathf.Min(distanciaAtual + recuoAoLevarDano, distanciaRecuo);
+    }
+
+    void Morrer()
+    {
+        if (morta) return;
+        morta = true;
+
         // se ela estava atacando, o evento de equilibrio termina com sucesso
         if (estadoAtual == Estado.Atacando && eventoEquilibrio != null)
         {
             eventoEquilibrio.EncerrarComFerro(this);
         }
 
-        Repelir();
+        todas.Remove(this);   // ninguem mais mira, desvia ou conta uma bruxa morta
+
+        if (barra != null) Destroy(barra.gameObject);
+
+        // conta para o nivel (o GerenciadorBruxas sobe o nivel a cada N mortes)
+        if (GerenciadorBruxas.instancia != null)
+        {
+            GerenciadorBruxas.instancia.RegistrarMorte();
+        }
+
+        StartCoroutine(AnimacaoDeMorte());
+    }
+
+    // cai e some aos poucos, depois destroi
+    IEnumerator AnimacaoDeMorte()
+    {
+        Vector3 posicaoInicial = transform.position;
+        float tempo = 0f;
+
+        while (tempo < duracaoMorte)
+        {
+            tempo += Time.deltaTime;
+            float k = Mathf.Clamp01(tempo / Mathf.Max(0.01f, duracaoMorte));
+
+            transform.position = posicaoInicial + Vector3.down * (k * 1.5f);
+
+            if (sr != null)
+            {
+                Color cor = corAoLevarDano;
+                cor.a = 1f - k;
+                sr.color = cor;
+            }
+
+            yield return null;
+        }
+
+        Destroy(gameObject);
+    }
+
+    void RestaurarCorDepoisDaPiscada()
+    {
+        if (sr == null || fimPiscada <= 0f) return;
+
+        if (Time.time >= fimPiscada)
+        {
+            sr.color = corOriginal;
+            fimPiscada = 0f;
+        }
     }
 
     // chamado quando o jogador pesca um peixe-bruxa: ela ataca agora!

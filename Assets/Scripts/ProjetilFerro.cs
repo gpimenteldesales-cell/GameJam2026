@@ -6,6 +6,7 @@ public class ProjetilFerro : MonoBehaviour
 {
     public float raioAcerto = 0.8f;     // tamanho da "area" da bruxa (aumente se estiver dificil acertar)
     public float tempoDeVida = 2.5f;    // some se nao acertar nada
+    public int dano = 1;                // quanto de vida a bruxa perde a cada acerto
     public float giro = 360f;           // graus por segundo (so visual)
 
     Vector2 velocidade;
@@ -14,6 +15,15 @@ public class ProjetilFerro : MonoBehaviour
     public void Lancar(Vector2 novaVelocidade)
     {
         velocidade = novaVelocidade;
+
+        // Se o prefab do projetil for o mesmo prefab do ferro que boia no mar, ele traz o script
+        // ItemFerro junto. Esse script prende a altura (boiar) e puxa o ferro para a correnteza,
+        // e e por isso que o ferro arremessado nao subia nem descia. Aqui tiramos ele.
+        ItemFerro boiando = GetComponent<ItemFerro>();
+        if (boiando != null)
+        {
+            Destroy(boiando);
+        }
     }
 
     void Update()
@@ -26,13 +36,10 @@ public class ProjetilFerro : MonoBehaviour
         {
             BruxaVoadora bruxa = BruxaVoadora.todas[i];
 
-            // bruxa que ja esta fugindo nao conta
-            if (bruxa.estadoAtual == BruxaVoadora.Estado.Recuando) continue;
-
             float distancia = DistanciaAteOSegmento(bruxa.transform.position, antes, depois);
             if (distancia <= raioAcerto)
             {
-                bruxa.AcertadaPorFerro();
+                bruxa.AcertadaPorFerro(dano);
                 Destroy(gameObject);
                 return;
             }

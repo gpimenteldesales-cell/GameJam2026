@@ -14,6 +14,12 @@ public class GeradorDeFerro : MonoBehaviour
     public float yMinimo = -2.5f;           // faixa de altura (dentro da agua)
     public float yMaximo = -0.8f;
 
+    [Header("Ajuda ao longo do jogo (sobe junto com o nivel das bruxas)")]
+    public float reducaoIntervaloPorNivel = 0.5f;  // a cada nivel, nasce ferro mais rapido
+    public float intervaloMinimo = 2.5f;           // nunca nasce mais rapido que isso
+    public int nivelParaFerroExtra = 2;            // a cada N niveis, cabe +1 ferro boiando ao mesmo tempo
+    public int maximoAbsoluto = 8;                 // limite de ferros boiando, aconteca o que acontecer
+
     float tempo;
 
     void Update()
@@ -23,16 +29,37 @@ public class GeradorDeFerro : MonoBehaviour
 
         tempo += Time.deltaTime;
 
-        if (tempo >= intervalo)
+        if (tempo >= IntervaloAtual())
         {
             tempo = 0f;
             Gerar();
         }
     }
 
+    // nivel atual das bruxas (1 se nao houver GerenciadorBruxas na cena)
+    int NivelAtual()
+    {
+        if (GerenciadorBruxas.instancia != null) return GerenciadorBruxas.instancia.nivel;
+        return 1;
+    }
+
+    // quanto maior o nivel, mais rapido nasce ferro
+    float IntervaloAtual()
+    {
+        float valor = intervalo - (NivelAtual() - 1) * reducaoIntervaloPorNivel;
+        return Mathf.Max(intervaloMinimo, valor);
+    }
+
+    // quanto maior o nivel, mais ferros podem boiar ao mesmo tempo
+    int MaximoAtual()
+    {
+        int extra = (NivelAtual() - 1) / Mathf.Max(1, nivelParaFerroExtra);
+        return Mathf.Min(maximoAbsoluto, maximoNaCena + extra);
+    }
+
     void Gerar()
     {
-        if (ItemFerro.todos.Count >= maximoNaCena) return;
+        if (ItemFerro.todos.Count >= MaximoAtual()) return;
 
         GameObject novo;
         if (prefabFerro != null)

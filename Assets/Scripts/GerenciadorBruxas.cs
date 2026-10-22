@@ -3,8 +3,9 @@ using TMPro;
 
 // Envia as bruxas em niveis.
 //  - uma bruxa nova a cada "intervaloSpawn" segundos (20 s)
-//  - a cada "duracaoNivel" segundos de jogo (60 s = 1 minuto) o nivel sobe
+//  - a cada "bruxasParaSubirNivel" bruxas MORTAS o nivel sobe
 //    e TODAS as bruxas (as que ja existem e as novas) ficam mais rapidas
+//    (opcional: o nivel tambem pode subir com o tempo, marcando "subirNivelPorTempo")
 // Coloque em UM objeto vazio da cena (ex: "GerenciadorBruxas").
 public class GerenciadorBruxas : MonoBehaviour
 {
@@ -25,7 +26,9 @@ public class GerenciadorBruxas : MonoBehaviour
     public int nivelParaBruxaExtra = 3;          // a cada N niveis, +1 bruxa por vez
 
     [Header("Niveis")]
-    public float duracaoNivel = 60f;             // 1 minuto de jogo por nivel
+    public int bruxasParaSubirNivel = 3;         // a cada N bruxas mortas o nivel sobe
+    public bool subirNivelPorTempo = false;      // marque para o nivel TAMBEM subir com o tempo
+    public float duracaoNivel = 60f;             // (so vale se "Subir Nivel Por Tempo" estiver marcado)
     public int nivelMaximo = 10;
     public float aumentoVelocidadePorNivel = 0.2f; // +20% de velocidade por nivel
 
@@ -36,8 +39,10 @@ public class GerenciadorBruxas : MonoBehaviour
     [Header("Estado (so pra ver no Inspector)")]
     public int nivel = 1;
     public float tempoDeJogo;
+    public int mortes;                           // bruxas mortas no total
 
     float tempoNivel;
+    int mortesNoNivel;
     float tempoSpawn;
 
     // 1 no nivel 1, 1.2 no nivel 2, 1.4 no nivel 3...
@@ -72,14 +77,10 @@ public class GerenciadorBruxas : MonoBehaviour
         tempoNivel += Time.deltaTime;
         tempoSpawn += Time.deltaTime;
 
-        // passou 1 minuto: sobe o nivel e acelera todas as bruxas
-        if (tempoNivel >= duracaoNivel && nivel < nivelMaximo)
+        // opcional: passou o tempo do nivel, sobe o nivel
+        if (subirNivelPorTempo && tempoNivel >= duracaoNivel && nivel < nivelMaximo)
         {
-            tempoNivel = 0f;
-            nivel++;
-            AplicarNivelEmTodas();
-            AtualizarUI();
-            Debug.Log("Nivel " + nivel + "! Bruxas " + MultiplicadorAtual.ToString("0.0") + "x mais rapidas");
+            SubirNivel();
         }
 
         // hora de mandar mais bruxas
@@ -171,6 +172,31 @@ public class GerenciadorBruxas : MonoBehaviour
         }
     }
 
+    // Chamado pela BruxaVoadora quando ela morre
+    public void RegistrarMorte()
+    {
+        mortes++;
+        mortesNoNivel++;
+
+        if (mortesNoNivel >= bruxasParaSubirNivel && nivel < nivelMaximo)
+        {
+            SubirNivel();
+        }
+
+        AtualizarUI();
+    }
+
+    // Sobe o nivel e acelera TODAS as bruxas (as que ja existem e as novas)
+    void SubirNivel()
+    {
+        tempoNivel = 0f;
+        mortesNoNivel = 0;
+        nivel++;
+        AplicarNivelEmTodas();
+        AtualizarUI();
+        Debug.Log("Nivel " + nivel + "! Bruxas " + MultiplicadorAtual.ToString("0.0") + "x mais rapidas");
+    }
+
     // Sobe o multiplicador de quem ja esta voando
     void AplicarNivelEmTodas()
     {
@@ -188,15 +214,20 @@ public class GerenciadorBruxas : MonoBehaviour
         string linha = "Nivel " + nivel + "/" + nivelMaximo
             + "  |  bruxas " + MultiplicadorAtual.ToString("0.0") + "x";
 
+        if (nivel < nivelMaximo)
+        {
+            linha += "  |  mortas " + mortesNoNivel + "/" + bruxasParaSubirNivel;
+        }
+
         if (mostrarTempos)
         {
             float faltaBruxa = Mathf.Max(0f, IntervaloAtual() - tempoSpawn);
             linha += "  |  proxima bruxa em " + Mathf.CeilToInt(faltaBruxa) + "s";
 
-            if (nivel < nivelMaximo)
+            if (subirNivelPorTempo && nivel < nivelMaximo)
             {
                 float faltaNivel = Mathf.Max(0f, duracaoNivel - tempoNivel);
-                linha += "  |  proximo nivel em " + Mathf.CeilToInt(faltaNivel) + "s";
+                linha += "  |  nivel por tempo em " + Mathf.CeilToInt(faltaNivel) + "s";
             }
         }
 
