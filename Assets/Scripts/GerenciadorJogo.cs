@@ -79,6 +79,12 @@ public class GerenciadorJogo : MonoBehaviour
         if (eventoBarco != null) eventoBarco.Cancelar();
         if (bruxa != null) bruxa.Repelir();
 
+        // repele tambem todas as bruxas criadas pelo GerenciadorBruxas
+        for (int i = 0; i < BruxaVoadora.todas.Count; i++)
+        {
+            BruxaVoadora.todas[i].Repelir();
+        }
+
         Invoke(nameof(MostrarVitoria), atrasoVitoria);
     }
 

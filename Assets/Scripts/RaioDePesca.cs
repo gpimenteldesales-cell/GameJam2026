@@ -1,4 +1,5 @@
 using UnityEngine;
+using TMPro;
 
 // Segure o botao esquerdo do mouse e mire no peixe.
 // Mirando tempo suficiente, o peixe e pescado e voce ganha pontos.
@@ -7,7 +8,11 @@ public class RaioDePesca : MonoBehaviour
     [Header("Raio")]
     public Transform origem;          // ponta da vara
     public float alcance = 8f;        // tamanho maximo do raio
-    public LayerMask camadaPeixe;     // layer onde estao os peixes
+    public float larguraDoRaio = 0.4f; // folga ao mirar: o peixe conta se o raio passar perto dele
+    public LayerMask camadaPeixe;     // (nao e mais usado; fica so pra nao perder a ligacao da cena)
+
+    [Header("UI (opcional)")]
+    public TMP_Text textoPesca;       // mostra o estado da pesca (ex: "PODE PESCAR | mirando 40%")
 
     [Header("Ligacoes")]
     public EventoEquilibrioBarco eventoBarco;
@@ -28,6 +33,14 @@ public class RaioDePesca : MonoBehaviour
     {
         camera2D = Camera.main;
         linha = GetComponent<LineRenderer>();
+
+        if (linha == null || origem == null || camera2D == null)
+        {
+            Debug.LogError("RaioDePesca: falta o LineRenderer no mesmo objeto, o campo 'Origem', ou a camera com a tag MainCamera!");
+            enabled = false;
+            return;
+        }
+
         linha.positionCount = 2;
         linha.enabled = false;
     }
@@ -37,6 +50,7 @@ public class RaioDePesca : MonoBehaviour
         if (!PodePescar())
         {
             PararDeMirar();
+            AtualizarTexto();
             return;
         }
 
@@ -48,6 +62,8 @@ public class RaioDePesca : MonoBehaviour
         {
             PararDeMirar();
         }
+
+        AtualizarTexto();
     }
 
     // so pesca enquanto o jogo esta rolando e o barco nao virou
@@ -84,19 +100,18 @@ public class RaioDePesca : MonoBehaviour
         // 3. direcao da vara ate o mouse
         Vector2 direcao = (mouse - origem.position).normalized;
 
-        // 4. lanca um raio invisivel nessa direcao
-        RaycastHit2D acerto = Physics2D.Raycast(origem.position, direcao, alcance, camadaPeixe);
+        // 4. procura o peixe que o raio atravessa (por distancia, nao precisa de collider)
+        Peixe peixe = AcharPeixeNoRaio(direcao);
 
         // 5. desenha a linha da vara
         linha.SetPosition(0, origem.position);
 
-        if (acerto.collider != null)
+        if (peixe != null)
         {
-            // o raio bateu em algo
-            linha.SetPosition(1, acerto.point);
-            Peixe peixe = acerto.collider.GetComponentInParent<Peixe>();
+            // o raio passou por um peixe: a linha termina nele
+            linha.SetPosition(1, peixe.transform.position);
 
-            if (peixe != null && peixe == peixeAtual)
+            if (peixe == peixeAtual)
             {
                 // continua mirando no mesmo peixe
                 tempoMirando += Time.deltaTime;
@@ -126,6 +141,71 @@ public class RaioDePesca : MonoBehaviour
         }
     }
 
+    // Devolve o peixe que o raio atravessa (ou null).
+    // Se voce ja esta mirando num peixe e o raio continua nele, ele FICA TRAVADO:
+    // outro peixe que cruze na frente nao tira a sua mira.
+    // So quando o raio sai do peixe atual e que procura outro (o mais perto da vara).
+    Peixe AcharPeixeNoRaio(Vector2 direcao)
+    {
+        Vector2 inicio = origem.position;
+        float aoLongo;
+
+        // 1. continua no peixe que ja estava sendo mirado?
+        if (peixeAtual != null && PeixeEstaNoRaio(peixeAtual, inicio, direcao, out aoLongo))
+        {
+            return peixeAtual;
+        }
+
+        // 2. senao, escolhe o peixe mais perto da vara entre os que o raio atravessa
+        Peixe melhor = null;
+        float menorAoLongo = float.MaxValue;
+
+        for (int i = 0; i < Peixe.todos.Count; i++)
+        {
+            Peixe p = Peixe.todos[i];
+
+            if (PeixeEstaNoRaio(p, inicio, direcao, out aoLongo) && aoLongo < menorAoLongo)
+            {
+                menorAoLongo = aoLongo;
+                melhor = p;
+            }
+        }
+
+        return melhor;
+    }
+
+    // O peixe conta se o raio passar a menos de "larguraDoRaio" + o tamanho dele.
+    // "aoLongo" e a distancia da vara ate o ponto do raio mais perto do peixe.
+    bool PeixeEstaNoRaio(Peixe p, Vector2 inicio, Vector2 direcao, out float aoLongo)
+    {
+        Vector2 posicao = p.transform.position;
+
+        aoLongo = Mathf.Clamp(Vector2.Dot(posicao - inicio, direcao), 0f, alcance);
+        Vector2 pontoNoRaio = inicio + direcao * aoLongo;
+
+        float folga = larguraDoRaio + p.RaioDeAcerto();
+        return Vector2.Distance(posicao, pontoNoRaio) <= folga;
+    }
+
+    // Escreve o estado da pesca no texto da tela (se voce ligou o campo "Texto Pesca")
+    void AtualizarTexto()
+    {
+        if (textoPesca == null) return;
+
+        string estado = "PODE PESCAR";
+        if (GerenciadorJogo.instancia != null && !GerenciadorJogo.instancia.jogando) estado = "BLOQUEADO: jogo acabou";
+        else if (eventoBarco != null && eventoBarco.virou) estado = "BLOQUEADO: barco virou";
+        else if (eventoBarco != null && bloquearPescaNoEvento && eventoBarco.emAndamento) estado = "BLOQUEADO: bruxa atacando (aperte E e Q)";
+
+        string mira = "";
+        if (peixeAtual != null)
+        {
+            mira = "  |  mirando (" + Mathf.RoundToInt(100f * tempoMirando / peixeAtual.tempoParaPescar) + "%)";
+        }
+
+        textoPesca.text = "Pesca: " + estado + "  |  peixes na cena: " + Peixe.todos.Count + mira;
+    }
+
     void Pescar(Peixe peixe)
     {
         bool eraBruxa = peixe.ehBruxa;
@@ -145,9 +225,17 @@ public class RaioDePesca : MonoBehaviour
         tempoMirando = 0f;
 
         // era uma bruxa disfarcada! ela ataca na hora
-        if (eraBruxa && bruxa != null)
+        if (eraBruxa)
         {
-            bruxa.ForcarAtaque();
+            if (GerenciadorBruxas.instancia != null)
+            {
+                // escolhe a bruxa mais perto (ou cria uma que ja nasce atacando)
+                GerenciadorBruxas.instancia.ForcarAtaque();
+            }
+            else if (bruxa != null)
+            {
+                bruxa.ForcarAtaque();
+            }
         }
     }
 

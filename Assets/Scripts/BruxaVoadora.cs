@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 // A bruxa voa ate o barco e tenta virar ele.
@@ -24,6 +25,13 @@ public class BruxaVoadora : MonoBehaviour
     public float distanciaRecuo = 10f;
     public float velocidadeRecuo = 3f;
 
+    [Header("Separacao entre bruxas")]
+    public float distanciaSeparacao = 1.8f;  // abaixo disso uma empurra a outra
+    public float forcaSeparacao = 2f;        // quanto empurra (em unidades do mundo)
+
+    [Header("Nivel (o GerenciadorBruxas muda isso sozinho)")]
+    public float multiplicadorNivel = 1f;    // 1 = normal, 1.5 = 50% mais rapida
+
     [Header("Suavidade")]
     public float tempoSuavizacao = 0.6f;
     public float velocidadeMaxima = 6f;
@@ -49,12 +57,28 @@ public class BruxaVoadora : MonoBehaviour
     // Lado em que a bruxa esta: 1 = direita do barco, -1 = esquerda
     [HideInInspector] public float lado;
 
+    // Todas as bruxas que existem agora (o ferro e o gerenciador usam isso)
+    public static readonly List<BruxaVoadora> todas = new List<BruxaVoadora>();
+
+    // O GerenciadorBruxas marca isso quando a bruxa nasce de um peixe-bruxa
+    [HideInInspector] public bool atacarAoNascer;
+
     float distanciaAtual;                // distancia horizontal ate o barco
     Vector2 velocidadeAtual;             // usada pelo SmoothDamp
     float faseAleatoria;                 // para cada bruxa flutuar diferente
     float proximoCacarejo;
     SpriteRenderer sr;
     EventoEquilibrioBarco eventoEquilibrio;
+
+    void OnEnable()
+    {
+        todas.Add(this);
+    }
+
+    void OnDisable()
+    {
+        todas.Remove(this);
+    }
 
     void Start()
     {
@@ -80,6 +104,12 @@ public class BruxaVoadora : MonoBehaviour
             lado = -1f;
         }
         distanciaAtual = Mathf.Abs(dx);
+
+        // nasceu de um peixe-bruxa: ataca assim que aparece
+        if (atacarAoNascer)
+        {
+            ForcarAtaque();
+        }
     }
 
     void Update()
@@ -96,8 +126,8 @@ public class BruxaVoadora : MonoBehaviour
     {
         if (estadoAtual == Estado.Aproximando)
         {
-            // quanto mais pontos o jogador tem, mais rapido ela chega
-            float velocidade = velocidadeAproximacao * (1f + ganancia * ProgressoDosPontos());
+            // quanto mais pontos o jogador tem (e quanto mais alto o nivel), mais rapido ela chega
+            float velocidade = velocidadeAproximacao * (1f + ganancia * ProgressoDosPontos()) * MultiplicadorSeguro();
             distanciaAtual = Mathf.MoveTowards(distanciaAtual, distanciaMinima, velocidade * Time.deltaTime);
 
             // perto o bastante? tenta comecar o evento de equilibrio
@@ -112,7 +142,7 @@ public class BruxaVoadora : MonoBehaviour
         else if (estadoAtual == Estado.Atacando)
         {
             // durante o ataque chega mais rapido
-            distanciaAtual = Mathf.MoveTowards(distanciaAtual, distanciaMinima, velocidadeAtaque * Time.deltaTime);
+            distanciaAtual = Mathf.MoveTowards(distanciaAtual, distanciaMinima, velocidadeAtaque * MultiplicadorSeguro() * Time.deltaTime);
         }
         else if (estadoAtual == Estado.Recuando)
         {
@@ -138,11 +168,51 @@ public class BruxaVoadora : MonoBehaviour
         alvo.y += Mathf.Sin(t * frequenciaVertical) * amplitudeVertical;
         alvo.x += Mathf.Sin(t * frequenciaHorizontal) * amplitudeHorizontal;
 
-        // move suavemente ate o alvo
+        // afasta um pouco das outras bruxas (a que esta atacando nao se afasta)
+        if (estadoAtual != Estado.Atacando)
+        {
+            alvo += CalcularSeparacao();
+        }
+
+        // move suavemente ate o alvo (em nivel alto ela responde mais rapido)
+        float m = MultiplicadorSeguro();
         Vector2 novaPosicao = Vector2.SmoothDamp(
-            transform.position, alvo, ref velocidadeAtual, tempoSuavizacao, velocidadeMaxima);
+            transform.position, alvo, ref velocidadeAtual, tempoSuavizacao / m, velocidadeMaxima * m);
 
         transform.position = new Vector3(novaPosicao.x, novaPosicao.y, transform.position.z);
+    }
+
+    // Empurra a bruxa para longe das outras que estao muito perto,
+    // para elas nao ficarem uma em cima da outra.
+    Vector2 CalcularSeparacao()
+    {
+        Vector2 empurrao = Vector2.zero;
+        Vector2 minhaPosicao = transform.position;
+
+        for (int i = 0; i < todas.Count; i++)
+        {
+            BruxaVoadora outra = todas[i];
+            if (outra == this) continue;
+
+            Vector2 diferenca = minhaPosicao - (Vector2)outra.transform.position;
+            float distancia = diferenca.magnitude;
+            if (distancia >= distanciaSeparacao) continue;
+
+            // exatamente no mesmo lugar? foge numa direcao propria de cada bruxa
+            Vector2 direcao;
+            if (distancia > 0.01f)
+            {
+                direcao = diferenca / distancia;
+            }
+            else
+            {
+                direcao = new Vector2(Mathf.Cos(faseAleatoria), Mathf.Sin(faseAleatoria));
+            }
+
+            empurrao += direcao * (distanciaSeparacao - distancia) / distanciaSeparacao;
+        }
+
+        return empurrao * forcaSeparacao;
     }
 
     // faz a bruxa olhar para o barco
@@ -160,6 +230,12 @@ public class BruxaVoadora : MonoBehaviour
         {
             sr.flipX = barcoEstaADireita;
         }
+    }
+
+    // nunca deixa o multiplicador chegar a zero (evitaria divisao por zero)
+    float MultiplicadorSeguro()
+    {
+        return Mathf.Max(0.1f, multiplicadorNivel);
     }
 
     // 0 a 1: quanto da meta de pontos o jogador ja tem
@@ -191,6 +267,18 @@ public class BruxaVoadora : MonoBehaviour
     public void Repelir()
     {
         estadoAtual = Estado.Recuando;
+    }
+
+    // chamado pelo ProjetilFerro quando o ferro acerta a bruxa
+    public void AcertadaPorFerro()
+    {
+        // se ela estava atacando, o evento de equilibrio termina com sucesso
+        if (estadoAtual == Estado.Atacando && eventoEquilibrio != null)
+        {
+            eventoEquilibrio.EncerrarComFerro(this);
+        }
+
+        Repelir();
     }
 
     // chamado quando o jogador pesca um peixe-bruxa: ela ataca agora!

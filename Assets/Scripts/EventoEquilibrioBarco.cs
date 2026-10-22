@@ -92,6 +92,15 @@ public class EventoEquilibrioBarco : MonoBehaviour
         if (uiRaiz != null) uiRaiz.SetActive(false);
     }
 
+    // O ProjetilFerro chama isso quando o ferro acerta a bruxa que esta atacando.
+    // Conta como vitoria no evento: o barco se endireita e a bruxa recua.
+    public void EncerrarComFerro(BruxaVoadora quem)
+    {
+        if (!emAndamento || quem != bruxa) return;
+
+        Vencer();
+    }
+
     void Update()
     {
         if (emAndamento)

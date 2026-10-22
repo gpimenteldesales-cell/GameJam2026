@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 // Peixe que nada de um lado pro outro.
@@ -20,14 +21,37 @@ public class Peixe : MonoBehaviour
     float direcao = 1f;   // 1 = indo pra direita, -1 = indo pra esquerda
     SpriteRenderer sr;
 
+    // todos os peixes que existem agora (o raio de pesca usa isso, sem precisar de collider)
+    public static readonly List<Peixe> todos = new List<Peixe>();
+
     void Awake()
     {
         quantidade++;
     }
 
+    void OnEnable()
+    {
+        todos.Add(this);
+    }
+
+    void OnDisable()
+    {
+        todos.Remove(this);
+    }
+
     void OnDestroy()
     {
         quantidade--;
+    }
+
+    // "tamanho" do peixe para o raio de pesca (metade do maior lado do sprite, ja com a escala)
+    public float RaioDeAcerto()
+    {
+        if (sr == null) sr = GetComponent<SpriteRenderer>();
+        if (sr == null) return 0.5f;
+
+        Vector3 meio = sr.bounds.extents;
+        return Mathf.Max(meio.x, meio.y);
     }
 
     void Start()
