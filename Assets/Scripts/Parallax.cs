@@ -1,6 +1,5 @@
 using UnityEngine;
 
-[RequireComponent(typeof(SpriteRenderer))]
 public class Parallax : MonoBehaviour
 {
     [Header("Movimento")]
@@ -12,6 +11,7 @@ public class Parallax : MonoBehaviour
     Vector3 posInicial;
     float larguraTile;
     float deslocamento;
+    bool paraEsquerda;
 
     void Start()
     {
@@ -19,10 +19,8 @@ public class Parallax : MonoBehaviour
 
         var sr = GetComponent<SpriteRenderer>();
 
-        // largura de UMA imagem em unidades do mundo
         larguraTile = sr.sprite.bounds.size.x * transform.localScale.x;
 
-        // desenha 3 repetições lado a lado, centradas neste objeto
         sr.drawMode = SpriteDrawMode.Tiled;
         sr.size = new Vector2(sr.sprite.bounds.size.x * 3f, sr.sprite.bounds.size.y);
     }
@@ -30,7 +28,7 @@ public class Parallax : MonoBehaviour
     void Update()
     {
         deslocamento += velocidade * multiplicadorGlobal * Time.deltaTime;
-        deslocamento = Mathf.Repeat(deslocamento, larguraTile); // volta ao início a cada largura
+        deslocamento = Mathf.Repeat(deslocamento, larguraTile);
 
         float direcao = paraEsquerda ? -1f : 1f;
         transform.position = new Vector3(posInicial.x + direcao * deslocamento, posInicial.y, posInicial.z);
