@@ -342,7 +342,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FishingRay
   origem: {fileID: 1100874039}
   alcance: 20
-  tempoParaPescar: 0.3
+  tempoParaPescar: 0
   camadaPeixe:
     serializedVersion: 2
     m_Bits: 8
