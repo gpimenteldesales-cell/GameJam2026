@@ -341,8 +341,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FishingRay
   origem: {fileID: 1100874039}
-  alcance: 10
-  tempoParaPescar: 1
+  alcance: 20
+  tempoParaPescar: 0.3
   camadaPeixe:
     serializedVersion: 2
     m_Bits: 8
@@ -1063,19 +1063,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6807185867822030566, guid: f74c22490fcc4a3498c335653b596793, type: 3}
       propertyPath: valor
-      value: 15
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 6807185867822030566, guid: f74c22490fcc4a3498c335653b596793, type: 3}
       propertyPath: limiteX
-      value: 30
+      value: 12
       objectReference: {fileID: 0}
     - target: {fileID: 6807185867822030566, guid: f74c22490fcc4a3498c335653b596793, type: 3}
       propertyPath: profundidade
-      value: 0.8
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6807185867822030566, guid: f74c22490fcc4a3498c335653b596793, type: 3}
       propertyPath: velocidadeBase
-      value: 7
+      value: 5
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

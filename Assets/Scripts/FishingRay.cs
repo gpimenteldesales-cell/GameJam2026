@@ -33,6 +33,7 @@ public class FishingRay : MonoBehaviour
             Vector3 mouse = cam.ScreenToWorldPoint(Input.mousePosition);
             mouse.z = 0f;
 
+            // 2. flip do sprite do pescador
             if (mouse.x < 0f)
             {
                 spritePescador.flipX = true;
@@ -42,13 +43,13 @@ public class FishingRay : MonoBehaviour
                 spritePescador.flipX = false;
             }
 
-                // 2. direção da origem até o mouse
+                // 3. direção da origem até o mouse
                 Vector2 direcao = (mouse - origem.position).normalized;
 
-            // 3. dispara o raio invisível
+            // 4. dispara o raio invisível
             RaycastHit2D hit = Physics2D.Raycast(origem.position, direcao, alcance, camadaPeixe);
 
-            // 4. desenha a linha visível
+            // 5. desenha a linha visível
             linha.SetPosition(0, origem.position);
             if (hit.collider != null)
             {
