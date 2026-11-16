@@ -22,6 +22,8 @@ public class GerenciadorJogo : MonoBehaviour
     public TMP_Text textoPontos;
     public TMP_Text textoTempo;
     public TMP_Text textoResultado;
+    [Tooltip("Opcional: texto do recorde durante o jogo. Vazio = o codigo desenha um 'Recorde: N' no canto superior direito.")]
+    public TMP_Text textoRecorde;
     public Slider barraOferenda;
     public GameObject painelVitoria;
     public GameObject painelDerrota;
@@ -41,12 +43,13 @@ public class GerenciadorJogo : MonoBehaviour
     public int PontuacaoFinal { get; private set; }
     public float TempoFinal { get; private set; }
 
-    GUIStyle estiloTempo;
+    GUIStyle estiloTempo, estiloRecorde;
 
     void Awake()
     {
         instancia = this;
         Paralaxe.multiplicadorGlobal = 1f;
+        PainelPause.Obter(); // garante que o ESC funciona (usa o painel da cena, ou cria um simples)
     }
 
     void Start()
@@ -68,7 +71,7 @@ public class GerenciadorJogo : MonoBehaviour
             textoTempo.text = FormatarTempo(tempo);
         }
 
-        if (!jogando && Input.GetKeyDown(KeyCode.R))
+        if (!jogando && !PainelPause.Digitando && Input.GetKeyDown(KeyCode.R))
         {
             Reiniciar();
         }
@@ -85,18 +88,39 @@ public class GerenciadorJogo : MonoBehaviour
 
     void OnGUI()
     {
-        if (textoTempo != null) return;
-
-        if (estiloTempo == null)
+        if (textoTempo == null)
         {
-            estiloTempo = new GUIStyle(GUI.skin.label);
-            estiloTempo.fontSize = 34;
-            estiloTempo.fontStyle = FontStyle.Bold;
-            estiloTempo.alignment = TextAnchor.UpperRight;
-            estiloTempo.normal.textColor = Color.white;
+            if (estiloTempo == null)
+            {
+                estiloTempo = new GUIStyle(GUI.skin.label);
+                estiloTempo.fontSize = 34;
+                estiloTempo.fontStyle = FontStyle.Bold;
+                estiloTempo.alignment = TextAnchor.UpperRight;
+                estiloTempo.normal.textColor = Color.white;
+                FontePadrao.Aplicar(estiloTempo);
+            }
+
+            GUI.Label(new Rect(Screen.width - 340f, 10f, 320f, 50f), FormatarTempo(tempo), estiloTempo);
         }
 
-        GUI.Label(new Rect(Screen.width - 340f, 10f, 320f, 50f), FormatarTempo(tempo), estiloTempo);
+        // recorde local durante o jogo (so se nao houver um TMP de recorde na cena)
+        if (textoRecorde == null && jogando && Recorde.Pontos > 0)
+        {
+            if (estiloRecorde == null)
+            {
+                estiloRecorde = new GUIStyle(GUI.skin.label);
+                estiloRecorde.fontSize = 22;
+                estiloRecorde.fontStyle = FontStyle.Bold;
+                estiloRecorde.alignment = TextAnchor.UpperRight;
+                FontePadrao.Aplicar(estiloRecorde);
+            }
+
+            bool batendo = pontos > Recorde.Pontos;
+            estiloRecorde.normal.textColor = batendo ? new Color(1f, 0.85f, 0.3f) : Color.white;
+
+            GUI.Label(new Rect(Screen.width - 340f, 56f, 320f, 32f),
+                "Recorde: " + Mathf.Max(Recorde.Pontos, pontos), estiloRecorde);
+        }
     }
 
     public void AdicionarPontos(int valor)
@@ -153,12 +177,26 @@ public class GerenciadorJogo : MonoBehaviour
         PontuacaoFinal = pontos;
         TempoFinal = tempo;
 
+        Recorde.Registrar(PontuacaoFinal, TempoFinal);
+
         if (textoResultado != null)
         {
-            textoResultado.text = "Pontos: " + PontuacaoFinal + "\nTempo: " + FormatarTempo(TempoFinal);
+            textoResultado.text = TextoDoResultado();
         }
 
         aoFimDeJogo.Invoke();
+    }
+
+    string TextoDoResultado()
+    {
+        string texto = "Pontos: " + PontuacaoFinal + "\nTempo: " + FormatarTempo(TempoFinal);
+
+        if (Recorde.NovoDePontos) texto += "\nNOVO RECORDE!";
+        else if (Recorde.Pontos > 0) texto += "\nRecorde: " + Recorde.Pontos;
+
+        if (Recorde.PosicaoUltima > 0) texto += "\nRanking: #" + Recorde.PosicaoUltima;
+
+        return texto;
     }
 
     void MostrarVitoria()
@@ -168,107 +206,23 @@ public class GerenciadorJogo : MonoBehaviour
 
     void MostrarDerrota()
     {
-        if (painelDerrota == null)
-        {
-            CriarPainelDerrotaPadrao();
-        }
-        else
+        if (painelDerrota != null)
         {
             painelDerrota.SetActive(true);
-        }
-    }
-
-    // ---------- Tela de derrota automatica (usada quando nenhum painel foi arrastado) ----------
-
-    void CriarPainelDerrotaPadrao()
-    {
-        if (EventSystem.current == null)
-        {
-            new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
+            return;
         }
 
-        GameObject raiz = new GameObject("TelaDerrota (automatica)");
-        Canvas canvas = raiz.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 500;
-
-        CanvasScaler escala = raiz.AddComponent<CanvasScaler>();
-        escala.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        escala.referenceResolution = new Vector2(1280f, 720f);
-        escala.matchWidthOrHeight = 0.5f;
-
-        raiz.AddComponent<GraphicRaycaster>();
-        CanvasGroup grupo = raiz.AddComponent<CanvasGroup>();
-        grupo.alpha = 0f;
-
-        GameObject fundoObj = new GameObject("Fundo", typeof(RectTransform));
-        fundoObj.transform.SetParent(raiz.transform, false);
-        Image fundo = fundoObj.AddComponent<Image>();
-        fundo.color = new Color(0.02f, 0.04f, 0.1f, 0.85f);
-        RectTransform rf = fundo.rectTransform;
-        rf.anchorMin = Vector2.zero;
-        rf.anchorMax = Vector2.one;
-        rf.offsetMin = Vector2.zero;
-        rf.offsetMax = Vector2.zero;
-
-        CriarTexto(raiz.transform, "Titulo", tituloDerrota, 84, new Vector2(0f, 170f), new Vector2(1100f, 120f), new Color(1f, 0.85f, 0.4f));
-
-        string resultado = "Pontos: " + PontuacaoFinal + "\nTempo: " + FormatarTempo(TempoFinal);
-        CriarTexto(raiz.transform, "Resultado", resultado, 44, new Vector2(0f, 30f), new Vector2(900f, 140f), Color.white);
-
-        GameObject botaoObj = new GameObject("BotaoReiniciar", typeof(RectTransform));
-        botaoObj.transform.SetParent(raiz.transform, false);
-        Image imgBotao = botaoObj.AddComponent<Image>();
-        imgBotao.color = new Color(0.9f, 0.35f, 0.25f);
-        Button botao = botaoObj.AddComponent<Button>();
-        botao.targetGraphic = imgBotao;
-        botao.onClick.AddListener(Reiniciar);
-        RectTransform rb = botaoObj.GetComponent<RectTransform>();
-        rb.anchorMin = rb.anchorMax = new Vector2(0.5f, 0.5f);
-        rb.sizeDelta = new Vector2(340f, 84f);
-        rb.anchoredPosition = new Vector2(0f, -110f);
-        CriarTexto(botaoObj.transform, "Texto", "Jogar de novo", 38, Vector2.zero, new Vector2(340f, 84f), Color.white);
-
-        CriarTexto(raiz.transform, "Dica", "ou aperte R", 28, new Vector2(0f, -200f), new Vector2(600f, 50f), new Color(1f, 1f, 1f, 0.7f));
-
-        painelDerrota = raiz;
-        StartCoroutine(AparecerGradualmente(grupo));
-    }
-
-    TMP_Text CriarTexto(Transform pai, string nome, string conteudo, float tamanho, Vector2 posicao, Vector2 area, Color cor)
-    {
-        GameObject obj = new GameObject(nome, typeof(RectTransform));
-        obj.transform.SetParent(pai, false);
-
-        TextMeshProUGUI texto = obj.AddComponent<TextMeshProUGUI>();
-        texto.text = conteudo;
-        texto.fontSize = tamanho;
-        texto.fontStyle = FontStyles.Bold;
-        texto.alignment = TextAlignmentOptions.Center;
-        texto.color = cor;
-        texto.raycastTarget = false;
-
-        RectTransform rt = texto.rectTransform;
-        rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
-        rt.pivot = new Vector2(0.5f, 0.5f);
-        rt.sizeDelta = area;
-        rt.anchoredPosition = posicao;
-        return texto;
-    }
-
-    IEnumerator AparecerGradualmente(CanvasGroup grupo)
-    {
-        float t = 0f;
-        while (t < 1f)
-        {
-            t += Time.unscaledDeltaTime / 0.6f;
-            grupo.alpha = Mathf.Clamp01(t);
-            yield return null;
-        }
+        // sem painel proprio: usa a pagina de pause (com o seu sprite)
+        Color cor = Recorde.NovoDePontos ? new Color(1f, 0.85f, 0.3f) : Color.white;
+        PainelPause.Obter().MostrarDerrota(tituloDerrota, TextoDoResultado(), cor, Recorde.PosicaoUltima > 0);
     }
 
     public void Reiniciar()
     {
+        // garante que o nome digitado fica salvo no ranking e que o jogo nao fica pausado
+        PainelPause.SalvarNome();
+        PainelPause.Liberar();
+
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
@@ -290,5 +244,15 @@ public class GerenciadorJogo : MonoBehaviour
         {
             barraOferenda.value = ProgressoMeta();
         }
+
+        AtualizarTextoRecorde();
+    }
+
+    void AtualizarTextoRecorde()
+    {
+        if (textoRecorde == null) return;
+
+        int melhor = Mathf.Max(Recorde.Pontos, pontos);
+        textoRecorde.text = melhor > 0 ? "Recorde: " + melhor : "";
     }
 }

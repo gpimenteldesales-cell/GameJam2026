@@ -5,9 +5,8 @@ using TMPro;
 
 public class EventoEquilibrioBarco : MonoBehaviour
 {
-    [Header("Teclas (alternar entre elas)")]
-    public KeyCode teclaA = KeyCode.E;
-    public KeyCode teclaB = KeyCode.Q;
+    KeyCode teclaA { get { return ConfiguracoesJogo.Tecla(AcaoTecla.EquilibrioA); } }
+    KeyCode teclaB { get { return ConfiguracoesJogo.Tecla(AcaoTecla.EquilibrioB); } }
 
     [Header("Equilibrio (0 = seguro, 1 = barco virou)")]
     [Range(0f, 1f)] public float perigoInicial = 0.4f;
@@ -35,6 +34,16 @@ public class EventoEquilibrioBarco : MonoBehaviour
     public Image barraPerigo;
     public TMP_Text textoAviso;
 
+    [Header("Barra com sprite (opcional)")]
+    public Sprite spriteFundoBarra;
+    public Color corFundoBarra = Color.white;
+    public bool encaixarPeloTrilho = true;
+    [Range(0f, 0.6f)] public float trilhoEsquerda = 0.046f;
+    [Range(0f, 0.6f)] public float trilhoDireita = 0.044f;
+    [Range(0f, 0.6f)] public float trilhoCima = 0.328f;
+    [Range(0f, 0.6f)] public float trilhoBaixo = 0.459f;
+    public Vector2 margemFundoBarra = new Vector2(12f, 12f);
+
     [Header("Barra de vida (cores e comportamento)")]
     public bool barraEsvaziaComPerigo = true;
     public float suavidadeBarra = 6f;
@@ -43,6 +52,7 @@ public class EventoEquilibrioBarco : MonoBehaviour
     public Color corVermelha = new Color(0.9f, 0.25f, 0.2f);
     [Range(0f, 1f)] public float limiteVerde = 0.5f;
     [Range(0f, 1f)] public float limiteAmarelo = 0.2f;
+    public float aumentoEmpurraoPorNivel = 0.08f;
 
     [Header("Eventos")]
     public UnityEvent aoIniciarEvento;
@@ -61,6 +71,8 @@ public class EventoEquilibrioBarco : MonoBehaviour
     float velocidadeAngular;
     float afundado;
     float proporcaoMostrada = 1f;
+    GameObject fundoBarra;
+    bool mostrandoTutorial;
 
     void Start()
     {
@@ -70,6 +82,7 @@ public class EventoEquilibrioBarco : MonoBehaviour
         anguloAtual = anguloBase;
 
         PrepararBarra();
+        CriarFundoDaBarra();
         MostrarUI(false);
     }
 
@@ -89,6 +102,94 @@ public class EventoEquilibrioBarco : MonoBehaviour
         barraPerigo.fillAmount = 1f;
     }
 
+    // Coloca a arte (sprite) ATRAS da barra de perigo.
+    // Com "encaixarPeloTrilho", a arte e esticada para o trilho escuro dela ficar exatamente
+    // onde esta a barra colorida (as medidas do trilho sao fracoes da imagem, de 0 a 1).
+    void CriarFundoDaBarra()
+    {
+        if (spriteFundoBarra == null || barraPerigo == null) return;
+
+        RectTransform alvo = barraPerigo.rectTransform;
+        if (alvo.parent == null) return;
+
+        Canvas.ForceUpdateCanvases();   // garante que o tamanho da barra ja foi calculado
+
+        // quanto a arte passa de cada lado da barra
+        float esquerda, direita, cima, baixo;
+        if (encaixarPeloTrilho)
+        {
+            float fracaoLargura = Mathf.Max(0.01f, 1f - trilhoEsquerda - trilhoDireita);
+            float fracaoAltura = Mathf.Max(0.01f, 1f - trilhoCima - trilhoBaixo);
+            float larguraTotal = alvo.rect.width / fracaoLargura;
+            float alturaTotal = alvo.rect.height / fracaoAltura;
+
+            esquerda = trilhoEsquerda * larguraTotal;
+            direita = trilhoDireita * larguraTotal;
+            cima = trilhoCima * alturaTotal;
+            baixo = trilhoBaixo * alturaTotal;
+        }
+        else
+        {
+            esquerda = margemFundoBarra.x;
+            direita = margemFundoBarra.x;
+            cima = margemFundoBarra.y;
+            baixo = margemFundoBarra.y;
+        }
+
+        fundoBarra = new GameObject("FundoBarraSprite", typeof(RectTransform), typeof(Image));
+        fundoBarra.transform.SetParent(alvo.parent, false);
+        fundoBarra.transform.SetSiblingIndex(alvo.GetSiblingIndex());   // logo antes da barra = desenhado atras dela
+
+        RectTransform rt = (RectTransform)fundoBarra.transform;
+        rt.anchorMin = alvo.anchorMin;
+        rt.anchorMax = alvo.anchorMax;
+        rt.pivot = alvo.pivot;
+        rt.sizeDelta = alvo.sizeDelta + new Vector2(esquerda + direita, baixo + cima);
+        rt.anchoredPosition = alvo.anchoredPosition + new Vector2(
+            -esquerda + alvo.pivot.x * (esquerda + direita),
+            -baixo + alvo.pivot.y * (baixo + cima));
+        rt.localScale = alvo.localScale;
+        rt.localRotation = alvo.localRotation;
+
+        Image imagem = fundoBarra.GetComponent<Image>();
+        imagem.sprite = spriteFundoBarra;
+        imagem.color = corFundoBarra;
+        imagem.raycastTarget = false;
+        imagem.type = Image.Type.Simple;
+    }
+
+    public RectTransform RetanguloDaBarra
+    {
+        get { return barraPerigo != null ? barraPerigo.rectTransform : null; }
+    }
+
+    public void MostrarBarraNoTutorial(bool mostrar)
+    {
+        mostrandoTutorial = mostrar;
+
+        if (mostrar)
+        {
+            proporcaoMostrada = 1f;
+
+            if (barraPerigo != null)
+            {
+                barraPerigo.fillAmount = 1f;
+                barraPerigo.color = CorDaVida(1f);
+            }
+
+            if (textoAviso != null)
+            {
+                textoAviso.text = "Aperte " + ConfiguracoesJogo.NomeTecla(teclaA) + " e " + ConfiguracoesJogo.NomeTecla(teclaB) + " alternados!";
+            }
+        }
+
+        if (!emAndamento) MostrarUI(mostrar);
+    }
+    float EmpurraoAtual()
+    {
+        int nivel = GerenciadorBruxas.instancia != null ? GerenciadorBruxas.instancia.nivel : 1;
+        return empurraoPorSegundo * (1f + (nivel - 1) * aumentoEmpurraoPorNivel);
+    }
     public bool TentarIniciar(BruxaVoadora atacante)
     {
         if (emAndamento || virou) return false;
@@ -135,7 +236,7 @@ public class EventoEquilibrioBarco : MonoBehaviour
 
             if (bruxaPerto)
             {
-                perigo += empurraoPorSegundo * Time.deltaTime;
+                perigo += EmpurraoAtual() * Time.deltaTime;
 
                 LerTeclas();
 
@@ -166,6 +267,10 @@ public class EventoEquilibrioBarco : MonoBehaviour
 
     void MostrarUI(bool mostrar)
     {
+        mostrar = mostrar || mostrandoTutorial;
+
+        if (fundoBarra != null) fundoBarra.SetActive(mostrar);
+
         if (uiRaiz != null)
         {
             uiRaiz.SetActive(mostrar);
@@ -178,6 +283,8 @@ public class EventoEquilibrioBarco : MonoBehaviour
 
     void LerTeclas()
     {
+        if (PainelPause.aberto) return;
+
         bool apertouA = Input.GetKeyDown(teclaA);
         bool apertouB = Input.GetKeyDown(teclaB);
 
@@ -272,7 +379,7 @@ public class EventoEquilibrioBarco : MonoBehaviour
 
         if (textoAviso != null)
         {
-            textoAviso.text = "Aperte " + teclaEsperada + "!";
+            textoAviso.text = "Aperte " + ConfiguracoesJogo.NomeTecla(teclaEsperada) + "!";
         }
     }
 
@@ -286,6 +393,12 @@ public class EventoEquilibrioBarco : MonoBehaviour
 
     void Virar()
     {
+        // Escudo do Barco: absorve o ataque que viraria o barco
+        if (GerenciadorUpgrades.TentarUsarEscudo())
+        {
+            Vencer(); // a bruxa é repelida, como se o jogador tivesse equilibrado
+            return;
+        }
         emAndamento = false;
         virou = true;
         MostrarUI(false);

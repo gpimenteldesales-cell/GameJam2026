@@ -17,9 +17,9 @@ public class TutorialMenu : MonoBehaviour
     public string[] paginas = new string[]
     {
         "PESCAR\n\nSegure o botao ESQUERDO do mouse e mire no peixe. Continue mirando ate fisgar: a linha vai ficando amarela. Peixes mais longe valem mais pontos!",
-        "CUIDADO COM AS BRUXAS\n\nBruxas voam ate o barco para vira-lo. Quando uma atacar, aperte E e Q de forma ALTERNADA para equilibrar o barco. Se o barco virar, acabou!\n\nAlguns peixes sao bruxas disfarcadas...",
-        "FERRO\n\nBotoes ESQUERDO + DIREITO juntos, com o mouse em cima de um ferro boiando, para pegar.\n\nSegure F para mirar e SOLTE para arremessar. Acertar a bruxa com ferro faz ela fugir!",
-        "GUIA DO PESCADOR\n\nCada peixe rende pontos e perolas. Aperte B para abrir o livro e comprar upgrades.\n\nFaca o MAXIMO de pontos antes do barco virar. Boa pesca!"
+        "CUIDADO COM AS BRUXAS\n\nBruxas voam ate o barco para vira-lo. Quando uma atacar, aperte {equilibrar1} e {equilibrar2} de forma ALTERNADA para equilibrar o barco. Se o barco virar, acabou!\n\nAlguns peixes sao bruxas disfarcadas...",
+        "FERRO\n\nBotoes ESQUERDO + DIREITO juntos, com o mouse em cima de um ferro boiando, para pegar.\n\nSegure {arremessar} para mirar e SOLTE para arremessar. Acertar a bruxa com ferro faz ela fugir!",
+        "GUIA DO PESCADOR\n\nCada peixe rende pontos e perolas. Aperte {livro} para abrir o livro e comprar upgrades.\n\nFaca o MAXIMO de pontos antes do barco virar. Boa pesca!"
     };
 
     int pagina;
@@ -52,7 +52,7 @@ public class TutorialMenu : MonoBehaviour
     {
         if (paginas == null || paginas.Length == 0) return;
 
-        if (texto != null) texto.text = paginas[pagina];
+        if (texto != null) texto.text = ConfiguracoesJogo.SubstituirTeclas(paginas[pagina]);
         if (textoPagina != null) textoPagina.text = (pagina + 1) + "/" + paginas.Length;
 
         if (botaoAnterior != null) botaoAnterior.interactable = pagina > 0;

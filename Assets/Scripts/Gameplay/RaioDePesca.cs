@@ -225,6 +225,7 @@ public class RaioDePesca : MonoBehaviour
         }
 
         if (GerenciadorUpgrades.livroAberto) return false;
+        if (PainelPause.aberto) return false;
 
         if (eventoBarco != null)
         {
@@ -351,6 +352,7 @@ public class RaioDePesca : MonoBehaviour
             estiloPorcentagem.fontStyle = FontStyle.Bold;
             estiloPorcentagem.alignment = TextAnchor.MiddleCenter;
             estiloPorcentagem.normal.textColor = Color.white;
+            FontePadrao.Aplicar(estiloPorcentagem);
         }
 
         float esc = Screen.height / 720f;

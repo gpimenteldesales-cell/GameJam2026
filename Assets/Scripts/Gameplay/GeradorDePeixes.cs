@@ -7,6 +7,18 @@ public class GeradorDePeixes : MonoBehaviour
     public GameObject prefabPeixeBruxa;
     [Range(0f, 1f)] public float chanceDeBruxa = 0.12f;
 
+    [Header("Peixe dourado (raro e valioso)")]
+    [Tooltip("Opcional: prefab proprio do peixe dourado. Vazio = um peixe comum ganha brilho dourado.")]
+    public GameObject prefabPeixeDourado;
+    [Range(0f, 1f)] public float chanceDeDourado = 0.06f;
+    [Tooltip("Quantas vezes o valor normal do peixe.")]
+    public int multiplicadorValorDourado = 5;
+    public float multiplicadorVelocidadeDourado = 1.6f;
+    [Tooltip("Segundos ate o peixe dourado fugir. 0 = nunca foge.")]
+    public float segundosDoDourado = 14f;
+    public AudioClip somDouradoAparece;
+    [Range(0f, 1f)] public float volumeSom = 1f;
+
     [Header("Nascimento")]
     public float intervalo = 1.5f;
     public int maximoDePeixes = 8;
@@ -19,6 +31,7 @@ public class GeradorDePeixes : MonoBehaviour
     void Start()
     {
         Peixe.quantidade = 0;
+        Peixe.douradosNaCena = 0;
     }
 
     void Update()
@@ -40,13 +53,25 @@ public class GeradorDePeixes : MonoBehaviour
         if (prefabsPeixes == null || prefabsPeixes.Length == 0) return;
 
         GameObject prefab;
+        bool dourado = false;
+
         if (prefabPeixeBruxa != null && Random.value < chanceDeBruxa)
         {
             prefab = prefabPeixeBruxa;
         }
         else
         {
-            prefab = prefabsPeixes[Random.Range(0, prefabsPeixes.Length)];
+            // so um peixe dourado por vez na cena
+            dourado = Peixe.douradosNaCena < 1 && Random.value < chanceDeDourado;
+
+            if (dourado && prefabPeixeDourado != null)
+            {
+                prefab = prefabPeixeDourado;
+            }
+            else
+            {
+                prefab = prefabsPeixes[Random.Range(0, prefabsPeixes.Length)];
+            }
         }
 
         float lado = 1f;
@@ -65,6 +90,12 @@ public class GeradorDePeixes : MonoBehaviour
             peixe.profundidade = Random.value;
 
             peixe.valor = Mathf.RoundToInt(peixe.valor * Mathf.Lerp(1f, 2f, peixe.profundidade));
+
+            if (dourado)
+            {
+                peixe.TornarDourado(multiplicadorValorDourado, multiplicadorVelocidadeDourado, segundosDoDourado);
+                GerenciadorSons.Tocar(somDouradoAparece, volumeSom, "Peixe dourado: som ao aparecer");
+            }
         }
     }
 }

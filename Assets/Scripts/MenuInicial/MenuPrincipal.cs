@@ -12,6 +12,8 @@ public class MenuPrincipal : MonoBehaviour
     public GameObject raizBotoes;
     public GameObject painelTutorial;
     public GameObject painelOpcoes;
+    [Tooltip("Deixe vazio: o painel do ranking se monta sozinho por codigo.")]
+    public GameObject painelLeaderboard;
     public bool esconderBotoesComPainel = true;
     public GameObject botaoSair;
 
@@ -29,12 +31,18 @@ public class MenuPrincipal : MonoBehaviour
     GameObject painelAberto;
     bool saindo;
 
+    void Awake()
+    {
+        CriarLeaderboard();
+    }
+
     void Start()
     {
         Time.timeScale = 1f;
 
         if (painelTutorial != null) painelTutorial.SetActive(false);
         if (painelOpcoes != null) painelOpcoes.SetActive(false);
+        if (painelLeaderboard != null) painelLeaderboard.SetActive(false);
 
         if (botaoSair != null && Application.platform == RuntimePlatform.WebGLPlayer)
         {
@@ -50,7 +58,7 @@ public class MenuPrincipal : MonoBehaviour
 
     void Update()
     {
-        if (painelAberto != null && Input.GetKeyDown(KeyCode.Escape))
+        if (painelAberto != null && !OpcoesMenu.BloqueiaEscape && Input.GetKeyDown(KeyCode.Escape))
         {
             FecharPainel();
         }
@@ -81,6 +89,11 @@ public class MenuPrincipal : MonoBehaviour
         Abrir(painelOpcoes);
     }
 
+    public void AbrirLeaderboard()
+    {
+        Abrir(painelLeaderboard);
+    }
+
     public void FecharPainel()
     {
         if (painelAberto == null) return;
@@ -99,6 +112,23 @@ public class MenuPrincipal : MonoBehaviour
         saindo = true;
         Tocar(somFecharPainel);
         StartCoroutine(Fade(0f, 1f, duracaoFadeSaida, Encerrar));
+    }
+
+    void CriarLeaderboard()
+    {
+        if (painelLeaderboard != null || raizBotoes == null) return;
+
+        Canvas canvas = raizBotoes.GetComponentInParent<Canvas>();
+        if (canvas == null) return;
+
+        LeaderboardPainel painel = LeaderboardPainel.Criar(canvas.transform, this);
+        painelLeaderboard = painel.gameObject;
+
+        // fica na frente dos botoes, mas atras do fade preto
+        if (fadePreto != null && fadePreto.transform.parent == canvas.transform)
+        {
+            painelLeaderboard.transform.SetSiblingIndex(fadePreto.transform.GetSiblingIndex());
+        }
     }
 
     void Abrir(GameObject painel)

@@ -13,9 +13,16 @@ public class Peixe : MonoBehaviour
     public bool ehBruxa = false;
     [Range(0f, 1f)] public float forcaDaPista = 0.6f;
 
+    [Header("Peixe dourado (o GeradorDePeixes liga isso sozinho)")]
+    public bool ehDourado = false;
+    public Color corOuro = new Color(1f, 0.85f, 0.2f);
+    public float velocidadeDoBrilho = 5f;
+
     public static int quantidade = 0;
+    public static int douradosNaCena = 0;
 
     float direcao = 1f;
+    float vidaRestante;
     SpriteRenderer sr;
 
     public static readonly List<Peixe> todos = new List<Peixe>();
@@ -38,6 +45,20 @@ public class Peixe : MonoBehaviour
     void OnDestroy()
     {
         quantidade--;
+        if (ehDourado) douradosNaCena = Mathf.Max(0, douradosNaCena - 1);
+    }
+
+    // Transforma este peixe em peixe dourado: vale mais, nada mais rapido e foge depois de um tempo.
+    public void TornarDourado(int multiplicadorValor, float multiplicadorVelocidade, float segundosDeVida)
+    {
+        if (ehDourado) return;
+
+        ehDourado = true;
+        douradosNaCena++;
+
+        valor *= Mathf.Max(1, multiplicadorValor);
+        velocidadeBase *= Mathf.Max(0.1f, multiplicadorVelocidade);
+        vidaRestante = Mathf.Max(0f, segundosDeVida);
     }
 
     public float RaioDeAcerto()
@@ -99,6 +120,38 @@ public class Peixe : MonoBehaviour
         {
             PiscarRoxo();
         }
+
+        if (ehDourado)
+        {
+            BrilharOuro();
+        }
+    }
+
+    void BrilharOuro()
+    {
+        if (sr == null) return;
+
+        float t = (Mathf.Sin(Time.time * velocidadeDoBrilho) + 1f) / 2f;
+        Color cor = Color.Lerp(Color.white, corOuro, 0.4f + 0.6f * t);
+
+        if (vidaRestante > 0f)
+        {
+            vidaRestante -= Time.deltaTime;
+
+            if (vidaRestante <= 0f)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            // nos ultimos 3 segundos pisca, avisando que vai fugir
+            if (vidaRestante < 3f && Mathf.FloorToInt(Time.time * 8f) % 2 == 0)
+            {
+                cor.a = 0.35f;
+            }
+        }
+
+        sr.color = cor;
     }
 
     void OlharParaDirecao()

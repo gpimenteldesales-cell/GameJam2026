@@ -37,7 +37,7 @@ public class ProjetilFerro : MonoBehaviour
             float distancia = DistanciaAteOSegmento(bruxa.transform.position, antes, depois);
             if (distancia <= raioAcerto)
             {
-                bruxa.AcertadaPorFerro(dano);
+                bruxa.AcertadaPorFerro(dano + GerenciadorUpgrades.BonusDano);
                 Destroy(gameObject);
                 return;
             }

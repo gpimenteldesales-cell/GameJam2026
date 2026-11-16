@@ -76,16 +76,16 @@ MonoBehaviour:
   somCacarejo: {fileID: 8300000, guid: 61596710a3069e24b9869cacfce11cfb, type: 3}
   cacarejoMinimo: 4
   cacarejoMaximo: 8
-  somRisoAparecer: {fileID: 0}
+  somRisoAparecer: {fileID: 8300000, guid: 61596710a3069e24b9869cacfce11cfb, type: 3}
   somRisoAtaque: {fileID: 0}
-  somAcertada: {fileID: 0}
+  somAcertada: {fileID: 8300000, guid: 26c31bd9d5cc24d47b911afbc48c84cd, type: 3}
   volumeSons: 1
   estadoAtual: 0
   lado: 0
   atacarAoNascer: 0
 --- !u!212 &7552791259737952107
 SpriteRenderer:
-  serializedVersion: 3
+  serializedVersion: 2
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -133,7 +133,7 @@ SpriteRenderer:
   m_SortingOrder: 1
   m_MaskInteraction: 0
   m_Sprite: {fileID: 1025800900086640339, guid: 01c63479ca3c2b24184b8256efcf23b8, type: 3}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.5188679, g: 0.46257564, b: 0.46257564, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -142,4 +142,3 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
-  m_BlendShapeWeights: []

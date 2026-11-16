@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 4a36c1d3a8aa8ce44a8e0014cbc8b12d
+guid: 86fc9af089594604e83db43c48a9c0d4
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -7913315125764139114
-    second: LivroPesscador_0
+      213: -942102919010538650
+    second: moeda_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -51,14 +51,12 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 100
+  spritePixelsToUnits: 250
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
   alphaIsTransparency: 1
-  spriteTessellationMethod: 0
   spriteTessellationDetail: -1
-  spriteGeometrySubdivision: -1
   textureType: 8
   textureShape: 1
   singleChannelComponent: 0
@@ -115,13 +113,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: LivroPesscador_0
+      name: moeda_0
       rect:
         serializedVersion: 2
-        x: 213
-        y: 57
-        width: 1414
-        height: 979
+        x: 16
+        y: 30
+        width: 569
+        height: 539
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -130,8 +128,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 6975a15d1d14e2290800000000000000
-      internalID: -7913315125764139114
+      spriteID: 66ba48af26afce2f0800000000000000
+      internalID: -942102919010538650
       vertices: []
       indices: 
       edges: []
@@ -150,7 +148,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      LivroPesscador_0: -7913315125764139114
+      moeda_0: -942102919010538650
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

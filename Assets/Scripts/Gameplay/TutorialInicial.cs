@@ -11,16 +11,18 @@ public class TutorialInicial : MonoBehaviour
     [Header("Alvos")]
     public Transform pescador;
     public RectTransform contadorPontos;
-    public RectTransform contadorFerro;
+    public Transform contadorFerro;
     public Transform barco;
+    [Tooltip("Evento do barco, usado para mostrar a barra de perigo durante o tutorial. Vazio = procura sozinho.")]
+    public EventoEquilibrioBarco eventoBarco;
     public bool explicarLivro = true;
 
     [Header("Textos")]
     [TextArea] public string mensagemPesca = "Segure o botao ESQUERDO do mouse e mire num peixe para pescar.\nPeixes que piscam roxo sao bruxas disfarcadas!";
     [TextArea] public string mensagemPontos = "Cada peixe vale pontos. Faca o maximo antes do barco virar!";
-    [TextArea] public string mensagemFerro = "Aperte os DOIS botoes do mouse em cima de um ferro para pegar.\nSegure F, mire e solte para arremessar.";
-    [TextArea] public string mensagemBarco = "Quando a bruxa atacar, aperte E e Q alternados para equilibrar o barco.";
-    [TextArea] public string mensagemLivro = "Aperte B para abrir o Guia do Pescador e comprar upgrades.";
+    [TextArea] public string mensagemFerro = "Aperte os DOIS botoes do mouse em cima de um ferro para pegar.\nSegure {arremessar}, mire e solte para arremessar.";
+    [TextArea] public string mensagemBarco = "Quando a bruxa atacar, aperte {equilibrar1} e {equilibrar2} alternados para equilibrar o barco.";
+    [TextArea] public string mensagemLivro = "Aperte {livro} para abrir o Guia do Pescador e comprar upgrades.";
 
     [Header("Foco")]
     public float raioMinimo = 70f;
@@ -29,6 +31,26 @@ public class TutorialInicial : MonoBehaviour
     public float duracaoZoom = 0.7f;
     [Range(0f, 1f)] public float escuridaoMaxima = 0.8f;
     public Color corAnel = new Color(1f, 0.9f, 0.3f, 1f);
+
+    [Header("Caixa de fundo (sprite opcional)")]
+    [Tooltip("Seu sprite da caixa. Vazio = caixa preta com borda colorida (visual antigo). So o FUNDO e trocado: o texto continua desenhado pelo codigo.")]
+    public Sprite spriteCaixa;
+    [Tooltip("Cor que multiplica o sprite. Branco = cores originais do desenho.")]
+    public Color corCaixa = Color.white;
+    [Tooltip("Largura da caixa em pixels, numa tela de 720 de altura (escala sozinha com a tela).")]
+    public float larguraCaixa = 580f;
+    [Tooltip("Altura da caixa em pixels (720p). Ignorada quando 'Usar Proporcao Do Sprite' esta ligado e existe sprite.")]
+    public float alturaCaixa = 140f;
+    [Tooltip("Com sprite: a altura sai da proporcao do desenho, para ele nao esticar.")]
+    public bool usarProporcaoDoSprite = true;
+
+    [Header("Espaco do texto dentro da caixa (pixels em 720p)")]
+    public float paddingEsquerda = 16f;
+    public float paddingDireita = 16f;
+    public float paddingTopo = 10f;
+    public float paddingBaixo = 34f;
+    [Tooltip("Distancia da linha 'clique para continuar' ate o fundo da caixa.")]
+    public float dicaDistanciaDoFundo = 32f;
 
     [Header("Livro (posicao fixa na tela, em pixels a partir do canto inferior esquerdo)")]
     public Vector2 livroDistanciaDoCanto = new Vector2(166f, 62f);
@@ -43,6 +65,7 @@ public class TutorialInicial : MonoBehaviour
         public Transform mundo;
         public RectTransform ui;
         public bool fixo;
+        public bool barraPerigo;
     }
 
     readonly Vector3[] cantos = new Vector3[4];
@@ -79,11 +102,25 @@ public class TutorialInicial : MonoBehaviour
 
     void OnDestroy()
     {
+        if (eventoBarco != null) eventoBarco.MostrarBarraNoTutorial(false);
+
         if (ativo)
         {
             ativo = false;
             Time.timeScale = 1f;
         }
+    }
+
+    Passo CriarPasso(string texto, Transform alvo)
+    {
+        RectTransform retangulo = alvo as RectTransform;
+
+        if (retangulo != null)
+        {
+            return new Passo { texto = texto, ui = retangulo };
+        }
+
+        return new Passo { texto = texto, mundo = alvo };
     }
 
     List<Passo> MontarPassos()
@@ -92,11 +129,45 @@ public class TutorialInicial : MonoBehaviour
 
         if (pescador != null) passos.Add(new Passo { texto = mensagemPesca, mundo = pescador });
         if (contadorPontos != null) passos.Add(new Passo { texto = mensagemPontos, ui = contadorPontos });
-        if (contadorFerro != null) passos.Add(new Passo { texto = mensagemFerro, ui = contadorFerro });
-        if (barco != null) passos.Add(new Passo { texto = mensagemBarco, mundo = barco });
-        if (explicarLivro && GerenciadorUpgrades.instancia != null) passos.Add(new Passo { texto = mensagemLivro, fixo = true });
+        if (contadorFerro != null) passos.Add(CriarPasso(ConfiguracoesJogo.SubstituirTeclas(mensagemFerro), contadorFerro));
+        if (barco != null)
+        {
+            string textoBarco = ConfiguracoesJogo.SubstituirTeclas(mensagemBarco);
+            EventoEquilibrioBarco evento = ObterEvento();
+            RectTransform barra = evento != null ? evento.RetanguloDaBarra : null;
+
+            if (barra != null)
+            {
+                passos.Add(new Passo { texto = textoBarco, ui = barra, barraPerigo = true });
+            }
+            else
+            {
+                passos.Add(new Passo { texto = textoBarco, mundo = barco });
+            }
+        }
+        if (explicarLivro && GerenciadorUpgrades.instancia != null) passos.Add(new Passo { texto = ConfiguracoesJogo.SubstituirTeclas(mensagemLivro), fixo = true });
 
         return passos;
+    }
+
+    EventoEquilibrioBarco ObterEvento()
+    {
+        if (eventoBarco == null)
+        {
+#if UNITY_2023_1_OR_NEWER
+            eventoBarco = FindAnyObjectByType<EventoEquilibrioBarco>();
+#else
+            eventoBarco = FindObjectOfType<EventoEquilibrioBarco>();
+#endif
+        }
+
+        return eventoBarco;
+    }
+
+    void AlternarBarra(bool mostrar)
+    {
+        EventoEquilibrioBarco evento = ObterEvento();
+        if (evento != null) evento.MostrarBarraNoTutorial(mostrar);
     }
 
     IEnumerator Rodar()
@@ -128,6 +199,7 @@ public class TutorialInicial : MonoBehaviour
         {
             numeroPasso = i + 1;
             mensagem = passos[i].texto;
+            AlternarBarra(passos[i].barraPerigo);
             alphaCaixa = 0f;
 
             Vector2 deCentro = centroAtual;
@@ -151,7 +223,7 @@ public class TutorialInicial : MonoBehaviour
                 escuridao = Mathf.MoveTowards(escuridao, escuridaoMaxima, dt * 4f);
                 alphaCaixa = Mathf.Clamp01((t - duracaoZoom * 0.4f) / 0.3f);
 
-                if (Input.GetKeyDown(KeyCode.Escape))
+                if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Escape))
                 {
                     pular = true;
                     break;
@@ -162,6 +234,8 @@ public class TutorialInicial : MonoBehaviour
                 yield return null;
             }
         }
+
+        AlternarBarra(false);
 
         float s = 0f;
         float raioFinal = raioAtual;
@@ -194,7 +268,6 @@ public class TutorialInicial : MonoBehaviour
     static bool Avancou()
     {
         return Input.GetMouseButtonDown(0)
-            || Input.GetKeyDown(KeyCode.Space)
             || Input.GetKeyDown(KeyCode.Return);
     }
 
@@ -320,14 +393,30 @@ public class TutorialInicial : MonoBehaviour
             estDica.fontStyle = FontStyle.Normal;
             estDica.alignment = TextAnchor.MiddleCenter;
             estDica.normal.textColor = new Color(0.85f, 0.85f, 0.9f);
+
+            FontePadrao.Aplicar(estTexto);
+            FontePadrao.Aplicar(estDica);
         }
 
         float esc = Screen.height / 720f;
         estTexto.fontSize = Mathf.RoundToInt(22f * esc);
         estDica.fontSize = Mathf.RoundToInt(15f * esc);
 
-        float largura = 580f * esc;
-        float altura = 140f * esc;
+        Texture texturaCaixa = null;
+        Rect coordsCaixa = new Rect(0f, 0f, 1f, 1f);
+        float proporcao = 0f;
+
+        if (spriteCaixa != null && spriteCaixa.texture != null)
+        {
+            texturaCaixa = spriteCaixa.texture;
+            Rect r = (spriteCaixa.packed && spriteCaixa.packingMode == SpritePackingMode.Tight) ? spriteCaixa.rect : spriteCaixa.textureRect;
+            coordsCaixa = new Rect(r.x / texturaCaixa.width, r.y / texturaCaixa.height, r.width / texturaCaixa.width, r.height / texturaCaixa.height);
+            if (r.width > 0f) proporcao = r.height / r.width;
+        }
+
+        float largura = Mathf.Max(50f, larguraCaixa) * esc;
+        float altura = Mathf.Max(30f, alturaCaixa) * esc;
+        if (texturaCaixa != null && usarProporcaoDoSprite && proporcao > 0f) altura = largura * proporcao;
         float margem = 24f * esc;
 
         float y;
@@ -344,18 +433,32 @@ public class TutorialInicial : MonoBehaviour
         float x = Mathf.Clamp(centroAtual.x - largura / 2f, margem, Screen.width - largura - margem);
 
         Rect caixa = new Rect(x, y, largura, altura);
-        float borda = 3f * esc;
 
-        MascaraCirculo.Retangulo(new Rect(caixa.x - borda, caixa.y - borda, caixa.width + borda * 2f, caixa.height + borda * 2f),
-            new Color(corAnel.r, corAnel.g, corAnel.b, alphaCaixa));
-        MascaraCirculo.Retangulo(caixa, new Color(0f, 0f, 0f, alphaCaixa));
+        if (texturaCaixa != null)
+        {
+            Color corAntes = GUI.color;
+            GUI.color = new Color(corCaixa.r, corCaixa.g, corCaixa.b, corCaixa.a * alphaCaixa);
+            GUI.DrawTextureWithTexCoords(caixa, texturaCaixa, coordsCaixa, true);
+            GUI.color = corAntes;
+        }
+        else
+        {
+            float borda = 3f * esc;
+
+            MascaraCirculo.Retangulo(new Rect(caixa.x - borda, caixa.y - borda, caixa.width + borda * 2f, caixa.height + borda * 2f),
+                new Color(corAnel.r, corAnel.g, corAnel.b, alphaCaixa));
+            MascaraCirculo.Retangulo(caixa, new Color(0f, 0f, 0f, alphaCaixa));
+        }
 
         Color antes = GUI.color;
         GUI.color = new Color(1f, 1f, 1f, alphaCaixa);
 
-        GUI.Label(new Rect(caixa.x + 16f * esc, caixa.y + 10f * esc, caixa.width - 32f * esc, caixa.height - 44f * esc), mensagem, estTexto);
-        GUI.Label(new Rect(caixa.x, caixa.yMax - 32f * esc, caixa.width, 26f * esc),
-            numeroPasso + "/" + totalPassos + "   |   clique para continuar   |   Esc pula", estDica);
+        float areaLargura = Mathf.Max(10f, caixa.width - (paddingEsquerda + paddingDireita) * esc);
+        float areaAltura = Mathf.Max(10f, caixa.height - (paddingTopo + paddingBaixo) * esc);
+
+        GUI.Label(new Rect(caixa.x + paddingEsquerda * esc, caixa.y + paddingTopo * esc, areaLargura, areaAltura), mensagem, estTexto);
+        GUI.Label(new Rect(caixa.x, caixa.yMax - dicaDistanciaDoFundo * esc, caixa.width, 26f * esc),
+            numeroPasso + "/" + totalPassos + "   |   clique para continuar   |   Espaco pula tudo", estDica);
 
         GUI.color = antes;
     }

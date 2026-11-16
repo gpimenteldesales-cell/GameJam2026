@@ -24,6 +24,7 @@ public class GerenciadorBruxas : MonoBehaviour
     public float duracaoNivel = 60f;
     public int nivelMaximo = 10;
     public float aumentoVelocidadePorNivel = 0.2f;
+    public int niveisParaMaisVida = 2;
 
     [Header("UI (opcional)")]
     public TMP_Text textoNivel;
@@ -121,6 +122,10 @@ public class GerenciadorBruxas : MonoBehaviour
         }
 
         bruxa.barco = barco;
+        if (niveisParaMaisVida > 0)
+        {
+            bruxa.DefinirVida(bruxa.vidaMaxima + (nivel - 1) / niveisParaMaisVida);
+        }
         bruxa.multiplicadorNivel = MultiplicadorAtual;
         bruxa.atacarAoNascer = atacarAoNascer;
         return bruxa;

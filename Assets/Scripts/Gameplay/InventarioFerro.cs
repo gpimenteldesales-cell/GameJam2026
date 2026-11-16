@@ -16,8 +16,9 @@ public class InventarioFerro : MonoBehaviour
     public float alcancePegar = 8f;
     public float raioClique = 0.7f;
 
+    KeyCode teclaArremessar { get { return ConfiguracoesJogo.Tecla(AcaoTecla.Arremessar); } }
+
     [Header("Arremessar (segure para mirar, solte para lancar)")]
-    public KeyCode teclaArremessar = KeyCode.F;
     public float velocidadeArremesso = 14f;
     public float intervaloEntreArremessos = 0.4f;
 
@@ -83,9 +84,9 @@ public class InventarioFerro : MonoBehaviour
             return;
         }
 
-        bool doisBotoes = Input.GetMouseButton(0) && Input.GetMouseButton(1);
-        bool acabouDeJuntar = Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1);
-        if (doisBotoes && acabouDeJuntar)
+        bool umBotao = Input.GetMouseButton(0);
+        bool acabouDeJuntar = Input.GetMouseButtonDown(0);
+        if (umBotao && acabouDeJuntar)
         {
             TentarPegar();
         }
@@ -130,6 +131,7 @@ public class InventarioFerro : MonoBehaviour
         }
 
         if (GerenciadorUpgrades.livroAberto) return false;
+        if (PainelPause.aberto) return false;
 
         return true;
     }

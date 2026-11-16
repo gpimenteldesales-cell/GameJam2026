@@ -297,7 +297,11 @@ public class BruxaVoadora : MonoBehaviour
             sr.flipX = barcoEstaADireita;
         }
     }
-
+    public void DefinirVida(int vida)
+    {
+        vidaMaxima = Mathf.Max(1, vida);
+        vidaAtual = vidaMaxima;
+    }
     float MultiplicadorSeguro()
     {
         return Mathf.Max(0.1f, multiplicadorNivel);
@@ -382,6 +386,7 @@ public class BruxaVoadora : MonoBehaviour
             GerenciadorBruxas.instancia.RegistrarMorte();
         }
 
+        GerenciadorUpgrades.BonusPorMatarBruxa();
         StartCoroutine(AnimacaoDeMorte());
     }
 
