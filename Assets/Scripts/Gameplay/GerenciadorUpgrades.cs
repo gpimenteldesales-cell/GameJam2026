@@ -4,6 +4,7 @@ public class GerenciadorUpgrades : MonoBehaviour
 {
     public static GerenciadorUpgrades instancia;
     public static bool livroAberto;
+    public static bool hudJogoAtivo;
 
     [Header("Livro")]
     public KeyCode teclaLivro = KeyCode.B;
@@ -262,7 +263,7 @@ public class GerenciadorUpgrades : MonoBehaviour
         }
     }
 
-    bool PodeAbrir()
+    public bool PodeAbrir()
     {
         if (PainelPause.aberto) return false;
         GerenciadorJogo jogo = GerenciadorJogo.instancia;
@@ -385,7 +386,7 @@ public class GerenciadorUpgrades : MonoBehaviour
         if (id == ESCUDO) escudoCarregado = true;
     }
 
-    bool PodeComprarAlgo()
+    public bool PodeComprarAlgo()
     {
         for (int i = 0; i < entradas.Length; i++)
         {
@@ -454,13 +455,16 @@ public class GerenciadorUpgrades : MonoBehaviour
 
     void DesenharHud()
     {
-        string saldoTexto = nomeMoeda + ": " + saldo;
-        Rect rTexto = new Rect(16f, Screen.height - 94f, 400f, 32f);
+        if (!hudJogoAtivo)
+        {
+            string saldoTexto = nomeMoeda + ": " + saldo;
+            Rect rTexto = new Rect(16f, Screen.height - 94f, 400f, 32f);
 
-        GUI.color = Color.black;
-        GUI.Label(new Rect(rTexto.x + 2f, rTexto.y + 2f, rTexto.width, rTexto.height), saldoTexto, estHud);
-        GUI.color = Color.white;
-        GUI.Label(rTexto, saldoTexto, estHud);
+            GUI.color = Color.black;
+            GUI.Label(new Rect(rTexto.x + 2f, rTexto.y + 2f, rTexto.width, rTexto.height), saldoTexto, estHud);
+            GUI.color = Color.white;
+            GUI.Label(rTexto, saldoTexto, estHud);
+        }
 
         if (Nivel(ESCUDO) > 0)
         {
@@ -477,7 +481,7 @@ public class GerenciadorUpgrades : MonoBehaviour
             GUI.Label(rEscudo, txtEscudo, estHud);
         }
 
-        if (PodeAbrir())
+        if (!hudJogoAtivo && PodeAbrir())
         {
             string dica = "Guia do Pescador [" + teclaLivro + "]";
             if (PodeComprarAlgo()) dica += "  (!)";
